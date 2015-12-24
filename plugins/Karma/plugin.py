@@ -75,9 +75,9 @@ class SqliteKarmaDB(object):
         db = self._getDb(channel)
         thing = thing.lower()
         cursor = db.cursor()
-        sql = """SELECT added, subtracted FROM karma
-                          WHERE normalized='%s'""" % thing
-        cursor.execute(sql)
+        sql = "SELECT added, subtracted FROM karma
+                          WHERE normalized=?"
+        cursor.execute(sql, (thing, ))
         results = cursor.fetchall()
         print results
         if results == []:
@@ -91,8 +91,8 @@ class SqliteKarmaDB(object):
         cursor = db.cursor()
         normalizedThings = dict(zip(map(lambda s: s.lower(), things), things))
         criteria = ' OR '.join(['normalized=%s'] * len(normalizedThings))
-        sql = """SELECT name, added-subtracted FROM karma
-                 WHERE '%s' ORDER BY added-subtracted DESC""" % criteria
+        sql = "SELECT name, added-subtracted FROM karma
+                 WHERE ? ORDER BY added-subtracted DESC" % criteria
         cursor.execute(sql, *normalizedThings)
         L = [(name, int(karma)) for (name, karma) in cursor.fetchall()]
         for (name, _) in L:
@@ -104,50 +104,50 @@ class SqliteKarmaDB(object):
     def top(self, channel, limit):
         db = self._getDb(channel)
         cursor = db.cursor()
-        cursor.execute("""SELECT name, added-subtracted FROM karma
-                          ORDER BY added-subtracted DESC LIMIT '%s'""" % limit)
+        cursor.execute("SELECT name, added-subtracted FROM karma
+                          ORDER BY added-subtracted DESC LIMIT ?", (limit, ))
         return [(t[0], int(t[1])) for t in cursor.fetchall()]
 
     def bottom(self, channel, limit):
         db = self._getDb(channel)
         cursor = db.cursor()
-        cursor.execute("""SELECT name, added-subtracted FROM karma
-                          ORDER BY added-subtracted ASC LIMIT '%s'""" % limit)
+        cursor.execute("SELECT name, added-subtracted FROM karma
+                          ORDER BY added-subtracted ASC LIMIT ?", (limit, ))
         return [(t[0], int(t[1])) for t in cursor.fetchall()]
 
     def rank(self, channel, thing):
         db = self._getDb(channel)
         cursor = db.cursor()
-        cursor.execute("""SELECT added-subtracted FROM karma
-                          WHERE name='%s'""" % thing)
+        cursor.execute("SELECT added-subtracted FROM karma
+                          WHERE name=?", (thing, ))
         if cursor.rowcount <= 0:
             return None
         karma = int(cursor.fetchall()[0])
-        cursor.execute("""SELECT COUNT(*) FROM karma
-                          WHERE added-subtracted > '%s'""" % karma)
+        cursor.execute("SELECT COUNT(*) FROM karma
+                          WHERE added-subtracted > ?", (karma, ))
         rank = int(cursor.fetchall()[0])
         return rank+1
 
     def size(self, channel):
         db = self._getDb(channel)
         cursor = db.cursor()
-        cursor.execute("""SELECT COUNT(*) FROM karma""")
+        cursor.execute("SELECT COUNT(*) FROM karma")
         return int(cursor.fetchall()[0])
 
     def increment(self, channel, name):
         db = self._getDb(channel)
         cursor = db.cursor()
         normalized = name.lower()
-        cursor.execute("""INSERT INTO karma VALUES (NULL, '%s', '%s', 0, 0)""" % (name, normalized))
-        cursor.execute("""UPDATE karma SET added=added+1 WHERE normalized='%s'"""  % normalized)
+        cursor.execute("INSERT INTO karma VALUES (NULL, ?, ?, 0, 0)", (name, normalized))
+        cursor.execute("UPDATE karma SET added=added+1 WHERE normalized=?", (normalized, ))
         db.commit()
 
     def decrement(self, channel, name):
         db = self._getDb(channel)
         cursor = db.cursor()
         normalized = name.lower()
-        cursor.execute("""INSERT INTO karma VALUES (NULL, '%s', '%s', 0, 0)""" % (name, normalized))
-        cursor.execute("""UPDATE karma SET subtracted=subtracted+1 WHERE normalized='%s'""" % normalized)
+        cursor.execute("INSERT INTO karma VALUES (NULL, ?, ?, 0, 0)", (name, normalized))
+        cursor.execute("UPDATE karma SET subtracted=subtracted+1 WHERE normalized=?", (normalized, ))
         db.commit()
 
     def most(self, channel, kind, limit):
@@ -159,19 +159,18 @@ class SqliteKarmaDB(object):
             orderby = 'added+subtracted'
         else:
             raise ValueError, 'invalid kind'
-        sql = """SELECT name, '%s' FROM karma ORDER BY '%s' DESC LIMIT '%s'""" % \
-              (orderby, orderby, limit)
+        sql = "SELECT name, ? FROM karma ORDER BY ? DESC LIMIT ?"
         db = self._getDb(channel)
         cursor = db.cursor()
-        cursor.execute(sql)
+        cursor.execute(sql, (orderby, orderby, limit))
         return [(name, int(i)) for (name, i) in cursor.fetchall()]
 
     def clear(self, channel, name):
         db = self._getDb(channel)
         cursor = db.cursor()
         normalized = name.lower()
-        cursor.execute("""UPDATE karma SET subtracted=0, added=0
-                          WHERE normalized='%s'""" % normalized)
+        cursor.execute("UPDATE karma SET subtracted=0, added=0
+                          WHERE normalized=?", (normalized, ))
         db.commit()
 
     def dump(self, channel, filename):
@@ -180,7 +179,7 @@ class SqliteKarmaDB(object):
         out = csv.writer(fd)
         db = self._getDb(channel)
         cursor = db.cursor()
-        cursor.execute("""SELECT name, added, subtracted FROM karma""")
+        cursor.execute("SELECT name, added, subtracted FROM karma")
         for (name, added, subtracted) in cursor.fetchall():
             out.writerow([name, added, subtracted])
         fd.close()
@@ -191,11 +190,11 @@ class SqliteKarmaDB(object):
         reader = csv.reader(fd)
         db = self._getDb(channel)
         cursor = db.cursor()
-        cursor.execute("""DELETE FROM karma""")
+        cursor.execute("DELETE FROM karma")
         for (name, added, subtracted) in reader:
             normalized = name.lower()
-            cursor.execute("""INSERT INTO karma
-                              VALUES (NULL, '%s', '%s', '%s', '%s')""" %
+            cursor.execute("INSERT INTO karma
+                              VALUES (NULL, ?, ?, ?, ?)",
                            (name, normalized, added, subtracted))
         db.commit()
         fd.close()
