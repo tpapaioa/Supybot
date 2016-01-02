@@ -29,8 +29,9 @@
 ###
 
 import os
-import time
+import sqliite3
 import string
+import time
 
 import supybot.conf as conf
 import supybot.ircdb as ircdb
@@ -39,13 +40,6 @@ from supybot.commands import *
 import supybot.plugins as plugins
 import supybot.ircutils as ircutils
 import supybot.callbacks as callbacks
-
-try:
-    import sqlite
-except ImportError:
-    raise callbacks.Error, 'You need to have PySQLite installed to use this ' \
-                           'plugin.  Download it at ' \
-                           '<http://code.google.com/p/pysqlite/>'
 
 def getFactoid(irc, msg, args, state):
     assert not state.channel
@@ -83,8 +77,8 @@ class Factoids(callbacks.Plugin, plugins.ChannelDBHandler):
 
     def makeDb(self, filename):
         if os.path.exists(filename):
-            return sqlite.connect(filename)
-        db = sqlite.connect(filename)
+            return sqlite3.connect(filename)
+        db = sqlite3.connect(filename)
         cursor = db.cursor()
         cursor.execute("""CREATE TABLE keys (
                           id INTEGER PRIMARY KEY,
@@ -128,11 +122,11 @@ class Factoids(callbacks.Plugin, plugins.ChannelDBHandler):
     def learn(self, irc, msg, args, channel, key, factoid):
         db = self.getDb(channel)
         cursor = db.cursor()
-        cursor.execute("SELECT id, locked FROM keys WHERE key LIKE %s", key)
+        cursor.execute("SELECT id, locked FROM keys WHERE key LIKE ?", (key, ))
         if cursor.rowcount == 0:
-            cursor.execute("""INSERT INTO keys VALUES (NULL, %s, 0)""", key)
+            cursor.execute("INSERT INTO keys VALUES (NULL, ?, 0)", (key, ))
             db.commit()
-            cursor.execute("SELECT id, locked FROM keys WHERE key LIKE %s",key)
+            cursor.execute("SELECT id, locked FROM keys WHERE key LIKE ?", (key, ))
         (id, locked) = map(int, cursor.fetchone())
         capability = ircdb.makeChannelCapability(channel, 'factoids')
         if not locked:
@@ -140,9 +134,8 @@ class Factoids(callbacks.Plugin, plugins.ChannelDBHandler):
                 name = ircdb.users.getUser(msg.prefix).name
             else:
                 name = msg.nick
-            cursor.execute("""INSERT INTO factoids VALUES
-                              (NULL, %s, %s, %s, %s)""",
-                           id, name, int(time.time()), factoid)
+            cursor.execute("INSERT INTO factoids VALUES (NULL, ?, ?, ?, ?)",
+                           (id, name, int(time.time()), factoid))
             db.commit()
             irc.replySuccess()
         else:
@@ -162,9 +155,9 @@ class Factoids(callbacks.Plugin, plugins.ChannelDBHandler):
         db = self.getDb(channel)
         cursor = db.cursor()
         cursor.execute("""SELECT factoids.fact FROM factoids, keys
-                          WHERE keys.key LIKE %s AND factoids.key_id=keys.id
+                          WHERE keys.key LIKE ? AND factoids.key_id=keys.id
                           ORDER BY factoids.id
-                          LIMIT 20""", key)
+                          LIMIT 20""", (key, ))
         return [t[0] for t in cursor.fetchall()]
 
     def _replyFactoids(self, irc, msg, key, factoids,
@@ -174,7 +167,7 @@ class Factoids(callbacks.Plugin, plugins.ChannelDBHandler):
                 try:
                     irc.reply(factoids[number-1])
                 except IndexError:
-                    irc.error('That\'s not a valid number for that key.')
+                    irc.error("That's not a valid number for that key.")
                     return
             else:
                 env = {'key': key}
@@ -194,7 +187,7 @@ class Factoids(callbacks.Plugin, plugins.ChannelDBHandler):
                     irc.replies(factoidsS, prefixer=prefixer,
                                 joiner=', or ', onlyPrefixFirst=True)
         elif error:
-            irc.error('No factoid matches that key.')
+            irc.error("No factoid matches that key.")
 
     def invalidCommand(self, irc, msg, tokens):
         if irc.isChannel(msg.args[0]):
@@ -216,7 +209,7 @@ class Factoids(callbacks.Plugin, plugins.ChannelDBHandler):
             if words[-1].isdigit():
                 number = int(words.pop())
                 if number <= 0:
-                    irc.errorInvalid('key id')
+                    irc.errorInvalid("key id")
         key = ' '.join(words)
         factoids = self._lookupFactoid(channel, key)
         self._replyFactoids(irc, msg, key, factoids, number)
@@ -231,7 +224,7 @@ class Factoids(callbacks.Plugin, plugins.ChannelDBHandler):
         """
         db = self.getDb(channel)
         cursor = db.cursor()
-        cursor.execute("UPDATE keys SET locked=1 WHERE key LIKE %s", key)
+        cursor.execute("UPDATE keys SET locked=1 WHERE key LIKE ?", (key, ))
         db.commit()
         irc.replySuccess()
     lock = wrap(lock, ['channel', 'text'])
@@ -245,7 +238,7 @@ class Factoids(callbacks.Plugin, plugins.ChannelDBHandler):
         """
         db = self.getDb(channel)
         cursor = db.cursor()
-        cursor.execute("UPDATE keys SET locked=0 WHERE key LIKE %s", key)
+        cursor.execute("UPDATE keys SET locked=0 WHERE key LIKE ?", (key, ))
         db.commit()
         irc.replySuccess()
     unlock = wrap(unlock, ['channel', 'text'])
@@ -273,14 +266,14 @@ class Factoids(callbacks.Plugin, plugins.ChannelDBHandler):
         cursor = db.cursor()
         cursor.execute("""SELECT keys.id, factoids.id
                           FROM keys, factoids
-                          WHERE key LIKE %s AND
-                                factoids.key_id=keys.id""", key)
+                          WHERE key LIKE ? AND
+                                factoids.key_id=keys.id""", (key, ))
         if cursor.rowcount == 0:
-            irc.error('There is no such factoid.')
+            irc.error("There is no such factoid.")
         elif cursor.rowcount == 1 or number is True:
             (id, _) = cursor.fetchone()
-            cursor.execute("""DELETE FROM factoids WHERE key_id=%s""", id)
-            cursor.execute("""DELETE FROM keys WHERE key LIKE %s""", key)
+            cursor.execute("DELETE FROM factoids WHERE key_id=?", (id, ))
+            cursor.execute("DELETE FROM keys WHERE key LIKE ?", (key, ))
             db.commit()
             irc.replySuccess()
         else:
@@ -289,15 +282,15 @@ class Factoids(callbacks.Plugin, plugins.ChannelDBHandler):
                 try:
                     (_, id) = results[number-1]
                 except IndexError:
-                    irc.error('Invalid factoid number.')
+                    irc.error("Invalid factoid number.")
                     return
-                cursor.execute("DELETE FROM factoids WHERE id=%s", id)
+                cursor.execute("DELETE FROM factoids WHERE id=?", (id, ))
                 db.commit()
                 irc.replySuccess()
             else:
-                irc.error('%s factoids have that key.  '
-                          'Please specify which one to remove, '
-                          'or use * to designate all of them.' %
+                irc.error("""%s factoids have that key.
+                          Please specify which one to remove,
+                          or use * to designate all of them.""" %
                           cursor.rowcount)
     forget = wrap(forget, ['channel', many('something')])
 
@@ -315,12 +308,12 @@ class Factoids(callbacks.Plugin, plugins.ChannelDBHandler):
         if cursor.rowcount != 0:
             L = []
             for (factoid, id) in cursor.fetchall():
-                cursor.execute("""SELECT key FROM keys WHERE id=%s""", id)
+                cursor.execute("SELECT key FROM keys WHERE id=?", (id, ))
                 (key,) = cursor.fetchone()
                 L.append('"%s": %s' % (ircutils.bold(key), factoid))
             irc.reply('; '.join(L))
         else:
-            irc.error('I couldn\'t find a factoid.')
+            irc.error("I couldn't find a factoid.")
     random = wrap(random, ['channel'])
 
     def info(self, irc, msg, args, channel, key):
@@ -332,14 +325,14 @@ class Factoids(callbacks.Plugin, plugins.ChannelDBHandler):
         """
         db = self.getDb(channel)
         cursor = db.cursor()
-        cursor.execute("SELECT id, locked FROM keys WHERE key LIKE %s", key)
+        cursor.execute("SELECT id, locked FROM keys WHERE key LIKE ?", (key, ))
         if cursor.rowcount == 0:
             irc.error('No factoid matches that key.')
             return
         (id, locked) = map(int, cursor.fetchone())
         cursor.execute("""SELECT  added_by, added_at FROM factoids
-                          WHERE key_id=%s
-                          ORDER BY id""", id)
+                          WHERE key_id=?
+                          ORDER BY id""", (id, ))
         factoids = cursor.fetchall()
         L = []
         counter = 0
@@ -366,8 +359,8 @@ class Factoids(callbacks.Plugin, plugins.ChannelDBHandler):
         cursor = db.cursor()
         cursor.execute("""SELECT factoids.id, factoids.fact
                           FROM keys, factoids
-                          WHERE keys.key LIKE %s AND
-                                keys.id=factoids.key_id""", key)
+                          WHERE keys.key LIKE ? AND
+                                keys.id=factoids.key_id""", (key, ))
         if cursor.rowcount == 0:
             irc.error(format('I couldn\'t find any key %q', key))
             return

@@ -28,9 +28,10 @@
 ###
 
 import os
-import time
 import shlex
+import sqlite3
 import string
+import time
 
 from cStringIO import StringIO
 
@@ -97,20 +98,13 @@ class SqliteMoobotDB(object):
         self.dbs.clear()
 
     def _getDb(self, channel):
-        try:
-            import sqlite
-        except ImportError:
-            raise callbacks.Error, \
-                  'You need to have PySQLite installed to use this ' \
-                  'plugin.  Download it at ' \
-                  '<http://code.google.com/p/pysqlite/>'
         if channel in self.dbs:
             return self.dbs[channel]
         filename = plugins.makeChannelFilename(self.filename, channel)
         if os.path.exists(filename):
-            self.dbs[channel] = sqlite.connect(filename)
+            self.dbs[channel] = sqlite3.connect(filename)
             return self.dbs[channel]
-        db = sqlite.connect(filename)
+        db = sqlite3.connect(filename)
         self.dbs[channel] = db
         cursor = db.cursor()
         cursor.execute("""CREATE TABLE factoids (
@@ -132,8 +126,8 @@ class SqliteMoobotDB(object):
     def getFactoid(self, channel, key):
         db = self._getDb(channel)
         cursor = db.cursor()
-        cursor.execute("""SELECT fact FROM factoids
-                          WHERE key LIKE %s""", key)
+        cursor.execute("SELECT fact FROM factoids
+                          WHERE key LIKE ?", (key, ))
         if cursor.rowcount == 0:
             return None
         else:
@@ -142,12 +136,12 @@ class SqliteMoobotDB(object):
     def getFactinfo(self, channel, key):
         db = self._getDb(channel)
         cursor = db.cursor()
-        cursor.execute("""SELECT created_by, created_at,
+        cursor.execute("SELECT created_by, created_at,
                                  modified_by, modified_at,
                                  last_requested_by, last_requested_at,
                                  requested_count, locked_by, locked_at
                           FROM factoids
-                          WHERE key LIKE %s""", key)
+                          WHERE key LIKE ?", (key,))
         if cursor.rowcount == 0:
             return None
         else:
@@ -156,8 +150,8 @@ class SqliteMoobotDB(object):
     def randomFactoid(self, channel):
         db = self._getDb(channel)
         cursor = db.cursor()
-        cursor.execute("""SELECT fact, key FROM factoids
-                          ORDER BY random() LIMIT 1""")
+        cursor.execute("SELECT fact, key FROM factoids
+                          ORDER BY random() LIMIT 1")
         if cursor.rowcount == 0:
             return None
         else:
@@ -166,44 +160,44 @@ class SqliteMoobotDB(object):
     def addFactoid(self, channel, key, value, creator_id):
         db = self._getDb(channel)
         cursor = db.cursor()
-        cursor.execute("""INSERT INTO factoids VALUES
-                          (%s, %s, %s, NULL, NULL, NULL, NULL,
-                           NULL, NULL, %s, 0)""",
-                           key, creator_id, int(time.time()), value)
+        cursor.execute("INSERT INTO factoids VALUES
+                          (?, ?, ?, NULL, NULL, NULL, NULL,
+                           NULL, NULL, ?, 0)",
+                           (key, creator_id, int(time.time()), value))
         db.commit()
 
     def updateFactoid(self, channel, key, newvalue, modifier_id):
         db = self._getDb(channel)
         cursor = db.cursor()
-        cursor.execute("""UPDATE factoids
-                          SET fact=%s, modified_by=%s,
-                          modified_at=%s WHERE key LIKE %s""",
-                          newvalue, modifier_id, int(time.time()), key)
+        cursor.execute("UPDATE factoids
+                          SET fact=?, modified_by=?,
+                          modified_at=? WHERE key LIKE ?",
+                          (newvalue, modifier_id, int(time.time()), key))
         db.commit()
 
     def updateRequest(self, channel, key, hostmask):
         db = self._getDb(channel)
         cursor = db.cursor()
-        cursor.execute("""UPDATE factoids SET
-                          last_requested_by = %s,
-                          last_requested_at = %s,
+        cursor.execute("UPDATE factoids SET
+                          last_requested_by = ?,
+                          last_requested_at = ?,
                           requested_count = requested_count + 1
-                          WHERE key = %s""",
-                          hostmask, int(time.time()), key)
+                          WHERE key = ?",
+                          (hostmask, int(time.time()), key))
         db.commit()
 
     def removeFactoid(self, channel, key):
         db = self._getDb(channel)
         cursor = db.cursor()
-        cursor.execute("""DELETE FROM factoids WHERE key LIKE %s""",
-                          key)
+        cursor.execute("DELETE FROM factoids WHERE key LIKE ?",
+                          (key, ))
         db.commit()
 
     def locked(self, channel, key):
         db = self._getDb(channel)
         cursor = db.cursor()
-        cursor.execute ("""SELECT locked_by FROM factoids
-                           WHERE key LIKE %s""", key)
+        cursor.execute ("SELECT locked_by FROM factoids
+                           WHERE key LIKE ?", (key, ))
         if cursor.fetchone()[0] is None:
             return False
         else:
@@ -212,41 +206,41 @@ class SqliteMoobotDB(object):
     def lock(self, channel, key, locker_id):
         db = self._getDb(channel)
         cursor = db.cursor()
-        cursor.execute("""UPDATE factoids
-                          SET locked_by=%s, locked_at=%s
-                          WHERE key LIKE %s""",
-                          locker_id, int(time.time()), key)
+        cursor.execute("UPDATE factoids
+                          SET locked_by=?, locked_at=?
+                          WHERE key LIKE ?",
+                          (locker_id, int(time.time()), key))
         db.commit()
 
     def unlock(self, channel, key):
         db = self._getDb(channel)
         cursor = db.cursor()
-        cursor.execute("""UPDATE factoids
-                          SET locked_by=%s, locked_at=%s
-                          WHERE key LIKE %s""", None, None, key)
+        cursor.execute("UPDATE factoids
+                          SET locked_by=?, locked_at=?
+                          WHERE key LIKE ?", (None, None, key))
         db.commit()
 
     def mostAuthored(self, channel, limit):
         db = self._getDb(channel)
         cursor = db.cursor()
-        cursor.execute("""SELECT created_by, count(key) FROM factoids
+        cursor.execute("SELECT created_by, count(key) FROM factoids
                           GROUP BY created_by
-                          ORDER BY count(key) DESC LIMIT %s""", limit)
+                          ORDER BY count(key) DESC LIMIT ?", (limit, ))
         return cursor.fetchall()
 
     def mostRecent(self, channel, limit):
         db = self._getDb(channel)
         cursor = db.cursor()
-        cursor.execute("""SELECT key FROM factoids
-                          ORDER BY created_at DESC LIMIT %s""", limit)
+        cursor.execute("SELECT key FROM factoids
+                          ORDER BY created_at DESC LIMIT ?", (limit, ))
         return cursor.fetchall()
 
     def mostPopular(self, channel, limit):
         db = self._getDb(channel)
         cursor = db.cursor()
-        cursor.execute("""SELECT key, requested_count FROM factoids
+        cursor.execute("SELECT key, requested_count FROM factoids
                           WHERE requested_count > 0
-                          ORDER BY requested_count DESC LIMIT %s""", limit)
+                          ORDER BY requested_count DESC LIMIT ?", (limit, ))
         if cursor.rowcount == 0:
             return []
         else:
@@ -255,8 +249,8 @@ class SqliteMoobotDB(object):
     def getKeysByAuthor(self, channel, authorId):
         db = self._getDb(channel)
         cursor = db.cursor()
-        cursor.execute("""SELECT key FROM factoids WHERE created_by=%s
-                          ORDER BY key""", authorId)
+        cursor.execute("SELECT key FROM factoids WHERE created_by=?
+                          ORDER BY key", (authorId, ))
         if cursor.rowcount == 0:
             return []
         else:
@@ -266,8 +260,8 @@ class SqliteMoobotDB(object):
         db = self._getDb(channel)
         cursor = db.cursor()
         glob = '%%%s%%' % glob
-        cursor.execute("""SELECT key FROM factoids WHERE key LIKE %s
-                          ORDER BY key""", glob)
+        cursor.execute("SELECT key FROM factoids WHERE key LIKE ?
+                          ORDER BY key", (glob, ))
         if cursor.rowcount == 0:
             return []
         else:
@@ -277,8 +271,8 @@ class SqliteMoobotDB(object):
         db = self._getDb(channel)
         cursor = db.cursor()
         glob = '%%%s%%' % glob
-        cursor.execute("""SELECT key FROM factoids WHERE fact LIKE %s
-                          ORDER BY key""", glob)
+        cursor.execute("SELECT key FROM factoids WHERE fact LIKE ?
+                          ORDER BY key", (glob, ))
         if cursor.rowcount == 0:
             return []
         else:
