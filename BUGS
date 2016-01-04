@@ -1,0 +1,68 @@
+1.) Exception when sending 'help quote random' as private message.
+
+10:40 <me> help quote random
+10:40 <supybot> An error has occurred and has been logged. Please contact this bot's administrator for more information.
+
+
+ERROR 2016-01-04T10:40:42 Uncaught exception in ['help'].
+Traceback (most recent call last):
+  File "/usr/lib/python2.7/site-packages/supybot/callbacks.py", line 1180, in _callCommand
+    self.callCommand(command, irc, msg, *args, **kwargs)
+  File "/usr/lib/python2.7/site-packages/supybot/utils/python.py", line 86, in g
+    f(self, *args, **kwargs)
+  File "/usr/lib/python2.7/site-packages/supybot/callbacks.py", line 1166, in callCommand
+    method(irc, msg, *args, **kwargs)
+  File "/usr/lib/python2.7/site-packages/supybot/commands.py", line 913, in newf
+    f(self, irc, msg, args, *state.args, **state.kwargs)
+  File "/usr/lib/python2.7/site-packages/supybot/plugins/Misc/plugin.py", line 200, in help
+    irc.reply(cbs[0].getCommandHelp(command, False))
+TypeError: getCommandHelp() takes exactly 2 arguments (3 given)
+
+2.) Help text instead of actually running command when sending 'quotegrabs random testchannel' as private message.
+
+10:41 <me> quotegrabs random testchannel
+10:41 <supybot> (quotegrabs random [<channel>] [<nick>]) -- Returns a randomly grabbed quote, optionally choosing only from those quotes grabbed for <nick>. <channel> is only necessary if the message isn't 
+                   sent in the channel itself.
+
+3.) Exception when sending 'quotegrabs random #testchannel' as private message.
+
+10:41 <me> quotegrabs random #testchannel
+10:41 <supybot> An error has occurred and has been logged. Please contact this bot's administrator for more information.
+
+ERROR 2016-01-04T10:41:51 Uncaught exception in ['quotegrabs', 'random'].
+Traceback (most recent call last):
+  File "/usr/lib/python2.7/site-packages/supybot/callbacks.py", line 1180, in _callCommand
+    self.callCommand(command, irc, msg, *args, **kwargs)
+  File "/usr/lib/python2.7/site-packages/supybot/utils/python.py", line 86, in g
+    f(self, *args, **kwargs)
+  File "/usr/lib/python2.7/site-packages/supybot/callbacks.py", line 1166, in callCommand
+    method(irc, msg, *args, **kwargs)
+  File "/usr/lib/python2.7/site-packages/supybot/commands.py", line 913, in newf
+    f(self, irc, msg, args, *state.args, **state.kwargs)
+  File "/usr/lib/python2.7/site-packages/supybot/plugins/QuoteGrabs/plugin.py", line 282, in random
+    irc.reply(self.db.random(channel, nick))
+  File "/usr/lib/python2.7/site-packages/supybot/plugins/QuoteGrabs/plugin.py", line 106, in random
+    db = self._getDb(channel)
+  File "/usr/lib/python2.7/site-packages/supybot/plugins/QuoteGrabs/plugin.py", line 79, in _getDb
+    db = sqlite3.connect(filename, converters={'bool': bool})
+TypeError: 'converters' is an invalid keyword argument for this function
+ERROR 2016-01-04T10:41:51 Exception id: 0x70b89
+
+4.) Lame ignore with no prior warning, ignoring entire domain:
+
+11:41 <me> list user
+11:41 <supybot> You've given me 12 commands within the last minute; I'm now ignoring you for 5 minutes.
+
+INFO 2016-01-04T11:41:27 Ignoring *!*@*.redhat.com for 300 seconds due to an
+     apparent command flood.
+
+5.) Console log of karma change is not informative:
+
+12:46 <me> test++
+12:46 <supybot> me: test now has 5 point(s) of karma
+
+[(5, 0)]
+
+6.) TO DO: Implement systemd support.
+
+7.) TO DO: Implement rpmbuild support.
