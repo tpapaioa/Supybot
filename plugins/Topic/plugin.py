@@ -32,7 +32,7 @@ import re
 import random
 import shutil
 import tempfile
-import cPickle as pickle
+import pickle as pickle
 
 import supybot.conf as conf
 import supybot.ircdb as ircdb
@@ -100,7 +100,7 @@ addConverter('topicNumber', getTopicNumber)
 addConverter('canChangeTopic', canChangeTopic)
 
 def splitTopic(topic, separator):
-    return filter(None, topic.split(separator))
+    return [_f for _f in topic.split(separator) if _f]
 
 datadir = conf.supybot.directories.data()
 filename = conf.supybot.directories.data.dirize('Topic.pickle')
@@ -120,10 +120,10 @@ class Topic(callbacks.Plugin):
                 self.redos = pickle.load(pkl)
                 self.lastTopics = pickle.load(pkl)
                 self.watchingFor332 = pickle.load(pkl)
-            except Exception, e:
+            except Exception as e:
                 self.log.debug('Unable to load pickled data: %s', e)
             pkl.close()
-        except IOError, e:
+        except IOError as e:
             self.log.debug('Unable to open pickle file: %s', e)
         world.flushers.append(self._flush)
 
@@ -140,11 +140,11 @@ class Topic(callbacks.Plugin):
                 pickle.dump(self.redos, pkl)
                 pickle.dump(self.lastTopics, pkl)
                 pickle.dump(self.watchingFor332, pkl)
-            except Exception, e:
+            except Exception as e:
                 self.log.warning('Unable to store pickled data: %s', e)
             pkl.close()
             shutil.move(tempfn, filename)
-        except (IOError, shutil.Error), e:
+        except (IOError, shutil.Error) as e:
             self.log.warning('File error: %s', e)
 
     def _splitTopic(self, topic, channel):
@@ -363,7 +363,7 @@ class Topic(callbacks.Plugin):
             irc.error('I cannot reorder 1 or fewer topics.', Raise=True)
         if len(numbers) != num:
             irc.error('All topic numbers must be specified.', Raise=True)
-        if sorted(numbers) != range(num):
+        if sorted(numbers) != list(range(num)):
             irc.error('Duplicate topic numbers cannot be specified.')
             return
         newtopics = [topics[i] for i in numbers]

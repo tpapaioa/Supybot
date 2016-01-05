@@ -49,7 +49,7 @@ import supybot.callbacks as callbacks
 def getWrapper(name):
     parts = registry.split(name)
     if not parts or parts[0] not in ('supybot', 'users'):
-        raise InvalidRegistryName, name
+        raise InvalidRegistryName(name)
     group = getattr(conf, parts.pop(0))
     while parts:
         try:
@@ -58,7 +58,7 @@ def getWrapper(name):
         # that we have a useful error message for the user.
         except (registry.NonExistentRegistryEntry,
                 registry.InvalidRegistryName):
-            raise registry.InvalidRegistryName, name
+            raise registry.InvalidRegistryName(name)
     return group
 
 def getCapability(name):
@@ -97,7 +97,7 @@ def getConfigVar(irc, msg, args, state):
         group = getWrapper(name)
         state.args.append(group)
         del args[0]
-    except registry.InvalidRegistryName, e:
+    except registry.InvalidRegistryName as e:
         state.errorInvalid('configuration variable', str(e))
 addConverter('configVar', getConfigVar)
 
@@ -112,12 +112,12 @@ class Config(callbacks.Plugin):
     def callCommand(self, command, irc, msg, *args, **kwargs):
         try:
             super(Config, self).callCommand(command, irc, msg, *args, **kwargs)
-        except registry.InvalidRegistryValue, e:
+        except registry.InvalidRegistryValue as e:
             irc.error(str(e))
 
     def _list(self, group):
         L = []
-        for (vname, v) in group._children.iteritems():
+        for (vname, v) in group._children.items():
             if hasattr(group, 'channelValue') and group.channelValue and \
                ircutils.isChannel(vname) and not v._children:
                 continue

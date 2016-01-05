@@ -33,7 +33,7 @@ import cgi
 import json
 import time
 import socket
-import urllib
+import urllib.request, urllib.parse, urllib.error
 
 import supybot.conf as conf
 import supybot.utils as utils
@@ -91,7 +91,7 @@ class Google(callbacks.PluginRegexp):
         headers = utils.web.defaultHeaders
         headers['Referer'] = ref
         opts = {'q': query, 'v': '1.0'}
-        for (k, v) in options.iteritems():
+        for (k, v) in options.items():
             if k == 'smallsearch':
                 if v:
                     opts['rsz'] = 'small'
@@ -110,16 +110,16 @@ class Google(callbacks.PluginRegexp):
             opts['rsz'] = 'large'
 
         fd = utils.web.getUrlFd('%s?%s' % (self._gsearchUrl,
-                                           urllib.urlencode(opts)),
+                                           urllib.parse.urlencode(opts)),
                                 headers)
         resp = json.load(fd)
         fd.close()
         if resp['responseStatus'] != 200:
-            raise callbacks.Error, 'We broke The Google!'
+            raise callbacks.Error('We broke The Google!')
         return resp
 
     def formatData(self, data, bold=True, max=0):
-        if isinstance(data, basestring):
+        if isinstance(data, str):
             return data
         results = []
         if max:

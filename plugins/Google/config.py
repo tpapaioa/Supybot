@@ -71,7 +71,7 @@ class Language(registry.OnlySomeStrings):
                   'Thai': 'th', 'Tibetan': 'bo', 'Turkish': 'tr',
                   'Ukranian': 'uk', 'Urdu': 'ur', 'Uzbek': 'uz',
                   'Uighur': 'ug', 'Vietnamese': 'vi'}
-    validStrings = ['lang_' + s for s in transLangs.values()]
+    validStrings = ['lang_' + s for s in list(transLangs.values())]
     validStrings.append('')
     def normalize(self, s):
         if s and not s.startswith('lang_'):

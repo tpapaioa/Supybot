@@ -73,7 +73,7 @@ class Status(callbacks.Plugin):
         networks = {}
         for Irc in world.ircs:
             networks.setdefault(Irc.network, []).append(Irc.nick)
-        networks = networks.items()
+        networks = list(networks.items())
         networks.sort()
         networks = [format('%s as %L', net, nicks) for (net,nicks) in networks]
         L = [format('I am connected to %L.', networks)]

@@ -52,7 +52,7 @@ class SchedulerTestCase(ChannelPluginTestCase):
             if s.isdigit():
                 id = s
                 break
-        self.failUnless(id, 'Couldn\'t find id in reply.')
+        self.assertTrue(id, 'Couldn\'t find id in reply.')
         self.assertNotError('scheduler remove %s' % id)
         self.assertNoResponse(' ', 5)
 

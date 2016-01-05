@@ -53,7 +53,7 @@ class IrcCommandDispatcher(object):
         return getattr(self, 'do' + command.capitalize(), None)
 
 
-class IrcCallback(IrcCommandDispatcher):
+class IrcCallback(IrcCommandDispatcher, metaclass=log.MetaFirewall):
     """Base class for standard callbacks.
 
     Callbacks derived from this class should have methods of the form
@@ -62,7 +62,6 @@ class IrcCallback(IrcCommandDispatcher):
     """
     callAfter = ()
     callBefore = ()
-    __metaclass__ = log.MetaFirewall
     __firewalled__ = {'die': None,
                       'reset': None,
                       '__call__': None,
@@ -204,7 +203,7 @@ class IrcMsgQueue(object):
                msg in self.lowpriority or \
                msg in self.highpriority
 
-    def __nonzero__(self):
+    def __bool__(self):
         return bool(self.highpriority or self.normal or self.lowpriority)
 
     def __len__(self):
@@ -329,10 +328,9 @@ class ChannelState(utils.python.Object):
         return ret
 
 
-class IrcState(IrcCommandDispatcher):
+class IrcState(IrcCommandDispatcher, metaclass=log.MetaFirewall):
     """Maintains state of the Irc connection.  Should also become smarter.
     """
-    __metaclass__ = log.MetaFirewall
     __firewalled__ = {'addMsg': None}
     def __init__(self, history=None, supported=None,
                  nicksToHostmasks=None, channels=None):
@@ -425,9 +423,9 @@ class IrcState(IrcCommandDispatcher):
             assert left[0] == '(', 'Odd PREFIX in 005: %s' % s
             left = left[1:]
             assert len(left) == len(right), 'Odd PREFIX in 005: %s' % s
-            return dict(zip(left, right))
+            return dict(list(zip(left, right)))
         else:
-            return dict(zip('ovh', s))
+            return dict(list(zip('ovh', s)))
     _005converters['prefix'] = _prefixParser
     del _prefixParser
     def _maxlistParser(s):
@@ -438,7 +436,7 @@ class IrcState(IrcCommandDispatcher):
             (mode, limit) = pair.split(':', 1)
             modes += mode
             limits += (int(limit),) * len(mode)
-        return dict(zip(modes, limits))
+        return dict(list(zip(modes, limits)))
     _005converters['maxlist'] = _maxlistParser
     del _maxlistParser
     def _maxbansParser(s):
@@ -451,7 +449,7 @@ class IrcState(IrcCommandDispatcher):
                 (mode, limit) = pair.split(':', 1)
                 modes += mode
                 limits += (int(limit),) * len(mode)
-            d = dict(zip(modes, limits))
+            d = dict(list(zip(modes, limits)))
             assert 'b' in d
             return d['b']
         else:
@@ -465,7 +463,7 @@ class IrcState(IrcCommandDispatcher):
                 converter = self._005converters.get(name, lambda x: x)
                 try:
                     self.supported[name] = converter(value)
-                except Exception, e:
+                except Exception as e:
                     log.exception('Uncaught exception in 005 converter:')
                     log.error('Name: %s, Converter: %s', name, converter)
             else:
@@ -547,7 +545,7 @@ class IrcState(IrcCommandDispatcher):
                 chan.removeUser(user)
 
     def doQuit(self, irc, msg):
-        for channel in self.channels.itervalues():
+        for channel in self.channels.values():
             channel.removeUser(msg.nick)
         if msg.nick in self.nicksToHostmasks:
             # If we're quitting, it may not be.
@@ -578,7 +576,7 @@ class IrcState(IrcCommandDispatcher):
             del self.nicksToHostmasks[oldNick]
         except KeyError:
             pass
-        for channel in self.channels.itervalues():
+        for channel in self.channels.values():
             channel.replaceUser(oldNick, newNick)
 
 
@@ -589,12 +587,11 @@ class IrcState(IrcCommandDispatcher):
 # 'queue', and 'state', in addition to the standard nick/user/ident attributes.
 ###
 _callbacks = []
-class Irc(IrcCommandDispatcher):
+class Irc(IrcCommandDispatcher, metaclass=log.MetaFirewall):
     """The base class for an IRC connection.
 
     Handles PING commands already.
     """
-    __metaclass__ = log.MetaFirewall
     __firewalled__ = {'die': None,
                       'feedMsg': None,
                       'takeMsg': None,}

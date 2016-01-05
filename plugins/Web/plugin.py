@@ -29,8 +29,8 @@
 ###
 
 import re
-import HTMLParser
-import htmlentitydefs
+import html.parser
+import html.entities
 
 import supybot.conf as conf
 import supybot.utils as utils
@@ -39,14 +39,14 @@ import supybot.plugins as plugins
 import supybot.ircutils as ircutils
 import supybot.callbacks as callbacks
 
-class Title(HTMLParser.HTMLParser):
-    entitydefs = htmlentitydefs.entitydefs.copy()
+class Title(html.parser.HTMLParser):
+    entitydefs = html.entities.entitydefs.copy()
     entitydefs['nbsp'] = ' '
     entitydefs['apos'] = '\''
     def __init__(self):
         self.inTitle = False
         self.title = ''
-        HTMLParser.HTMLParser.__init__(self)
+        html.parser.HTMLParser.__init__(self)
 
     def handle_starttag(self, tag, attrs):
         if tag == 'title':
@@ -72,7 +72,7 @@ class Web(callbacks.PluginRegexp):
     def callCommand(self, command, irc, msg, *args, **kwargs):
         try:
             super(Web, self).callCommand(command, irc, msg, *args, **kwargs)
-        except utils.web.Error, e:
+        except utils.web.Error as e:
             irc.reply(str(e))
 
     def titleSnarfer(self, irc, msg, match):
@@ -90,13 +90,13 @@ class Web(callbacks.PluginRegexp):
             try:
                 size = conf.supybot.protocols.http.peekSize()
                 text = utils.web.getUrl(url, size=size)
-            except utils.web.Error, e:
+            except utils.web.Error as e:
                 self.log.info('Couldn\'t snarf title of %u: %s.', url, e)
                 return
             parser = Title()
             try:
                 parser.feed(text)
-            except HTMLParser.HTMLParseError:
+            except html.parser.HTMLParseError:
                 self.log.debug('Encountered a problem parsing %u.  Title may '
                                'already be set, though', url)
             if parser.title:
@@ -116,7 +116,7 @@ class Web(callbacks.PluginRegexp):
         fd = utils.web.getUrlFd(url)
         try:
             s = ', '.join([format('%s: %s', k, v)
-                           for (k, v) in fd.headers.items()])
+                           for (k, v) in list(fd.headers.items())])
             irc.reply(s)
         finally:
             fd.close()
@@ -173,7 +173,7 @@ class Web(callbacks.PluginRegexp):
         parser = Title()
         try:
             parser.feed(text)
-        except HTMLParser.HTMLParseError:
+        except html.parser.HTMLParseError:
             self.log.debug('Encountered a problem parsing %u.  Title may '
                            'already be set, though', url)
         if parser.title:

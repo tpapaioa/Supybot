@@ -59,7 +59,7 @@ class Later(callbacks.Plugin):
     def _flushNotes(self):
         fd = utils.file.AtomicFile(self.filename)
         writer = csv.writer(fd)
-        for (nick, notes) in self._notes.iteritems():
+        for (nick, notes) in self._notes.items():
             for (time, whence, text) in notes:
                 writer.writerow([nick, time, whence, text])
         fd.close()
@@ -67,7 +67,7 @@ class Later(callbacks.Plugin):
     def _openNotes(self):
         try:
             fd = file(self.filename)
-        except EnvironmentError, e:
+        except EnvironmentError as e:
             self.log.warning('Couldn\'t open %s: %s', self.filename, e)
             return
         reader = csv.reader(fd)
@@ -131,7 +131,7 @@ class Later(callbacks.Plugin):
             else:
                 irc.error('I have no notes for that nick.')
         else:
-            nicks = self._notes.keys()
+            nicks = list(self._notes.keys())
             if nicks:
                 utils.sortBy(ircutils.toLower, nicks)
                 irc.reply(format('I currently have notes waiting for %L.',

@@ -35,18 +35,18 @@ class GamesTestCase(ChannelPluginTestCase):
     def testRoulette(self):
         self.irc.feedMsg(ircmsgs.op(self.channel, self.irc.nick))
         sawKick = False
-        for i in xrange(100):
+        for i in range(100):
             m = self.getMsg('roulette', frm='someoneElse')
             if m.command == 'PRIVMSG':
-                self.failUnless(self._nonKickRe.search(m.args[1]),
+                self.assertTrue(self._nonKickRe.search(m.args[1]),
                                 'Got a msg without bang|click|spin: %r' % m)
             elif m.command == 'KICK':
                 sawKick = True
-                self.failUnless('bang' in m.args[2].lower(),
+                self.assertTrue('bang' in m.args[2].lower(),
                                 'Got a KICK without bang in it.')
             else:
                 self.fail('Got something other than a kick or a privmsg.')
-        self.failUnless(sawKick, 'Didn\'t get a kick in %s iterations!' % i)
+        self.assertTrue(sawKick, 'Didn\'t get a kick in %s iterations!' % i)
 
     def testEightball(self):
         self.assertNotError('eightball')

@@ -32,7 +32,7 @@
 Contains simple socket drivers.  Asyncore bugged (haha, pun!) me.
 """
 
-from __future__ import division
+
 
 import time
 import errno
@@ -103,13 +103,13 @@ class SocketDriver(drivers.IrcDriver, drivers.ServersMixin):
             while msgs[-1] is not None:
                 msgs.append(self.irc.takeMsg())
             del msgs[-1]
-            self.outbuffer += ''.join(imap(str, msgs))
+            self.outbuffer += ''.join(map(str, msgs))
         if self.outbuffer:
             try:
                 sent = self.conn.send(self.outbuffer)
                 self.outbuffer = self.outbuffer[sent:]
                 self.eagains = 0
-            except socket.error, e:
+            except socket.error as e:
                 self._handleSocketError(e)
         if self.zombie and not self.outbuffer:
             self._reallyDie()
@@ -137,13 +137,13 @@ class SocketDriver(drivers.IrcDriver, drivers.ServersMixin):
                     self.irc.feedMsg(msg)
         except socket.timeout:
             pass
-        except ssl.SSLError, e:
+        except ssl.SSLError as e:
             if e.args[0] == 'The read operation timed out':
                 pass
             else:
                 self._handleSocketError(e)
                 return
-        except socket.error, e:
+        except socket.error as e:
             self._handleSocketError(e)
             return
         if not self.irc.zombie:
@@ -186,7 +186,7 @@ class SocketDriver(drivers.IrcDriver, drivers.ServersMixin):
                         return
                 vhost = conf.supybot.protocols.irc.vhost()
                 self.conn.bind((vhost, 0))
-            except socket.error, e:
+            except socket.error as e:
                 msg = host
                 if host != address:
                     msg = '%s (%s)' % (host, address)
@@ -201,7 +201,7 @@ class SocketDriver(drivers.IrcDriver, drivers.ServersMixin):
                 self.connected = True
                 self.resetDelay()
                 break
-            except socket.error, e:
+            except socket.error as e:
                 if e.args[0] == errno.EINPROGRESS:
                     now = time.time()
                     when = now + 60

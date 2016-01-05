@@ -40,7 +40,7 @@ import supybot.callbacks as callbacks
 class User(callbacks.Plugin):
     def _checkNotChannel(self, irc, msg, password=' '):
         if password and irc.isChannel(msg.args[0]):
-            raise callbacks.Error, conf.supybot.replies.requiresPrivacy()
+            raise callbacks.Error(conf.supybot.replies.requiresPrivacy())
 
     def list(self, irc, msg, args, optlist, glob):
         """[--capability=<capability>] [<glob>]
@@ -63,7 +63,7 @@ class User(callbacks.Plugin):
                 return r.match(u.name) is not None
             predicates.append(p)
         users = []
-        for u in ircdb.users.itervalues():
+        for u in ircdb.users.values():
             for predicate in predicates:
                 if not predicate(u):
                     break
@@ -254,7 +254,7 @@ class User(callbacks.Plugin):
             command.
             """
             def getHostmasks(user):
-                hostmasks = map(repr, user.hostmasks)
+                hostmasks = list(map(repr, user.hostmasks))
                 if hostmasks:
                     hostmasks.sort()
                     return format('%L', hostmasks)
@@ -321,11 +321,11 @@ class User(callbacks.Plugin):
                               Raise=True)
             try:
                 user.addHostmask(hostmask)
-            except ValueError, e:
+            except ValueError as e:
                 irc.error(str(e), Raise=True)
             try:
                 ircdb.users.setUser(user)
-            except ValueError, e:
+            except ValueError as e:
                 irc.error(str(e), Raise=True)
             except ircdb.DuplicateHostmask:
                 irc.error('That hostmask is already registered.', Raise=True)
@@ -442,7 +442,7 @@ class User(callbacks.Plugin):
         owners = 0
         admins = 0
         hostmasks = 0
-        for user in ircdb.users.itervalues():
+        for user in ircdb.users.values():
             users += 1
             hostmasks += len(user.hostmasks)
             try:

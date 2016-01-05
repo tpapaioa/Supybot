@@ -149,7 +149,7 @@ class News(callbacks.Plugin):
             try:
                 record = self.db.get(channel, id)
                 irc.reply(str(record))
-            except dbi.NoRecordError, id:
+            except dbi.NoRecordError as id:
                 irc.errorInvalid('news item id', id)
     news = wrap(news, ['channeldb', additional('positiveInt')])
 
@@ -192,7 +192,7 @@ class News(callbacks.Plugin):
             try:
                 record = self.db.getOld(channel, id)
                 irc.reply(str(record))
-            except dbi.NoRecordError, id:
+            except dbi.NoRecordError as id:
                 irc.errorInvalid('news item id', id)
         else:
             try:

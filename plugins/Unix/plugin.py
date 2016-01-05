@@ -142,7 +142,7 @@ class Unix(callbacks.Plugin):
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE,
                                     stdin=subprocess.PIPE)
-        except OSError, e:
+        except OSError as e:
             irc.error(e, Raise=True)
         ret = inst.poll()
         if ret is not None:
@@ -154,7 +154,7 @@ class Unix(callbacks.Plugin):
             irc.error(s, Raise=True)
         (out, err) = inst.communicate(word)
         inst.wait()
-        lines = filter(None, out.splitlines())
+        lines = [_f for _f in out.splitlines() if _f]
         lines.pop(0) # Banner
         if not lines:
             irc.error('No results found.', Raise=True)
@@ -200,14 +200,14 @@ class Unix(callbacks.Plugin):
                                         stdout=subprocess.PIPE,
                                         stderr=subprocess.PIPE,
                                         stdin=file(os.devnull))
-            except OSError, e:
+            except OSError as e:
                 irc.error('It seems the configured fortune command was '
                           'not available.', Raise=True)
             (out, err) = inst.communicate()
             inst.wait()
             lines = out.splitlines()
-            lines = map(str.rstrip, lines)
-            lines = filter(None, lines)
+            lines = list(map(str.rstrip, lines))
+            lines = [_f for _f in lines if _f]
             irc.replies(lines, joiner=' ')
         else:
             irc.error('The fortune command is not configured. If fortune is '

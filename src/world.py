@@ -98,7 +98,7 @@ def flush():
     for (i, f) in enumerate(flushers):
         try:
             f()
-        except Exception, e:
+        except Exception as e:
             log.exception('Uncaught exception in flusher #%s (%s):', i, f)
 
 def debugFlush(s=''):
@@ -167,7 +167,7 @@ def upkeep():
 def makeDriversDie():
     """Kills drivers."""
     log.info('Killing Driver objects.')
-    for driver in drivers._drivers.itervalues():
+    for driver in drivers._drivers.values():
         driver.die()
 
 def makeIrcsDie():

@@ -31,7 +31,7 @@ import supybot.conf as conf
 import supybot.utils as utils
 import supybot.registry as registry
 
-import plugin
+from . import plugin
 
 progstats = plugin.progstats
 

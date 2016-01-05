@@ -34,6 +34,7 @@ import operator
 
 from . import conf, ircutils, log, registry, unpreserve, utils, world
 from .utils.iter import imap, ilen, ifilter
+import collections
 
 def isCapability(capability):
     return len(capability.split(None, 1)) == 1
@@ -79,7 +80,7 @@ def unAntiCapability(capability):
     """Takes an anticapability and returns the non-anti form."""
     assert isCapability(capability), 'got %s' % capability
     if not isAntiCapability(capability):
-        raise ValueError, '%s is not an anti capability' % capability
+        raise ValueError('%s is not an anti capability' % capability)
     if isChannelCapability(capability):
         (channel, capability) = fromChannelCapability(capability)
         return ','.join((channel, capability[1:]))
@@ -95,7 +96,7 @@ def invertCapability(capability):
         return makeAntiCapability(capability)
 
 def canonicalCapability(capability):
-    if callable(capability):
+    if isinstance(capability, collections.Callable):
         capability = capability()
     assert isCapability(capability), 'got %s' % capability
     return capability.lower()
@@ -144,11 +145,11 @@ class CapabilitySet(set):
         elif self.__parent.__contains__(_invert(capability)):
             return False
         else:
-            raise KeyError, capability
+            raise KeyError(capability)
 
     def __repr__(self):
         return '%s([%s])' % (self.__class__.__name__,
-                             ', '.join(imap(repr, self)))
+                             ', '.join(map(repr, self)))
 
 antiOwner = makeAntiCapability('owner')
 class UserCapabilitySet(CapabilitySet):
@@ -282,8 +283,7 @@ class IrcUser(object):
         """Adds a hostmask to the user's hostmasks."""
         assert ircutils.isUserHostmask(hostmask), 'got %s' % hostmask
         if len(unWildcardHostmask(hostmask)) < 3:
-            raise ValueError, \
-                  'Hostmask must contain at least 3 non-wildcard characters.'
+            raise ValueError('Hostmask must contain at least 3 non-wildcard characters.')
         self.hostmasks.add(hostmask)
 
     def removeHostmask(self, hostmask):
@@ -303,10 +303,10 @@ class IrcUser(object):
                     knownHostmasks.add(mask)
                     return True
                 return False
-            uniqued = filter(uniqueHostmask, reversed(self.auth))
+            uniqued = list(filter(uniqueHostmask, reversed(self.auth)))
             self.auth = list(reversed(uniqued))
         else:
-            raise ValueError, 'secure flag set, unmatched hostmask'
+            raise ValueError('secure flag set, unmatched hostmask')
 
     def clearAuth(self):
         """Unsets a user's authenticated hostmask."""
@@ -370,7 +370,7 @@ class IrcChannel(object):
         """Checks whether a given hostmask is banned by the channel banlist."""
         assert ircutils.isUserHostmask(hostmask), 'got %s' % hostmask
         now = time.time()
-        for (pattern, expiration) in self.bans.items():
+        for (pattern, expiration) in list(self.bans.items()):
             if now < expiration or not expiration:
                 if ircutils.hostmaskPatternEqual(pattern, hostmask):
                     return True
@@ -424,7 +424,7 @@ class IrcChannel(object):
         if self.checkBan(hostmask):
             return True
         now = time.time()
-        for (pattern, expiration) in self.ignores.items():
+        for (pattern, expiration) in list(self.ignores.items()):
             if now < expiration or not expiration:
                 if ircutils.hostmaskPatternEqual(pattern, hostmask):
                     return True
@@ -442,11 +442,11 @@ class IrcChannel(object):
         write('defaultAllow %s' % self.defaultAllow)
         for capability in self.capabilities:
             write('capability ' + capability)
-        bans = self.bans.items()
+        bans = list(self.bans.items())
         utils.sortBy(operator.itemgetter(1), bans)
         for (ban, expiration) in bans:
             write('ban %s %d' % (ban, expiration))
-        ignores = self.ignores.items()
+        ignores = list(self.ignores.items())
         utils.sortBy(operator.itemgetter(1), ignores)
         for (ignore, expiration) in ignores:
             write('ignore %s %d' % (ignore, expiration))
@@ -455,7 +455,7 @@ class IrcChannel(object):
 
 class Creator(object):
     def badCommand(self, command, rest, lineno):
-        raise ValueError, 'Invalid command on line %s: %s' % (lineno, command)
+        raise ValueError('Invalid command on line %s: %s' % (lineno, command))
 
 class IrcUserCreator(Creator):
     u = None
@@ -466,12 +466,12 @@ class IrcUserCreator(Creator):
 
     def user(self, rest, lineno):
         if self.u.id is not None:
-            raise ValueError, 'Unexpected user command on line %s.' % lineno
+            raise ValueError('Unexpected user command on line %s.' % lineno)
         self.u.id = int(rest)
 
     def _checkId(self):
         if self.u.id is None:
-            raise ValueError, 'Unexpected user description without user.'
+            raise ValueError('Unexpected user description without user.')
 
     def name(self, rest, lineno):
         self._checkId()
@@ -524,12 +524,12 @@ class IrcChannelCreator(Creator):
 
     def channel(self, rest, lineno):
         if self.name is not None:
-            raise ValueError, 'Unexpected channel command on line %s' % lineno
+            raise ValueError('Unexpected channel command on line %s' % lineno)
         IrcChannelCreator.name = rest
 
     def _checkId(self):
         if self.name is None:
-            raise ValueError, 'Unexpected channel description without channel.'
+            raise ValueError('Unexpected channel description without channel.')
 
     def lobotomized(self, rest, lineno):
         self._checkId()
@@ -582,10 +582,10 @@ class UsersDictionary(utils.IterableMap):
                 reader.readFile(filename)
                 self.noFlush = False
                 self.flush()
-            except EnvironmentError, e:
+            except EnvironmentError as e:
                 log.error('Invalid user dictionary file, resetting to empty.')
                 log.error('Exact error: %s', utils.exnToString(e))
-            except Exception, e:
+            except Exception as e:
                 log.exception('Exact error:')
         finally:
             self.noFlush = False
@@ -599,7 +599,7 @@ class UsersDictionary(utils.IterableMap):
         if self.filename is not None:
             try:
                 self.open(self.filename)
-            except EnvironmentError, e:
+            except EnvironmentError as e:
                 log.warning('UsersDictionary.reload failed: %s', e)
         else:
             log.error('UsersDictionary.reload called with no filename.')
@@ -608,7 +608,7 @@ class UsersDictionary(utils.IterableMap):
         """Flushes the database to its file."""
         if not self.noFlush:
             if self.filename is not None:
-                L = self.users.items()
+                L = list(self.users.items())
                 L.sort()
                 fd = utils.file.AtomicFile(self.filename)
                 for (id, u) in L:
@@ -628,7 +628,7 @@ class UsersDictionary(utils.IterableMap):
         self.users.clear()
 
     def iteritems(self):
-        return self.users.iteritems()
+        return iter(self.users.items())
 
     def getUserId(self, s):
         """Returns the user ID of a given name or hostmask."""
@@ -637,12 +637,12 @@ class UsersDictionary(utils.IterableMap):
                 return self._hostmaskCache[s]
             except KeyError:
                 ids = {}
-                for (id, user) in self.users.iteritems():
+                for (id, user) in self.users.items():
                     x = user.checkHostmask(s)
                     if x:
                         ids[id] = x
                 if len(ids) == 1:
-                    id = ids.keys()[0]
+                    id = list(ids.keys())[0]
                     self._hostmaskCache[s] = id
                     try:
                         self._hostmaskCache[id].add(s)
@@ -650,26 +650,26 @@ class UsersDictionary(utils.IterableMap):
                         self._hostmaskCache[id] = set([s])
                     return id
                 elif len(ids) == 0:
-                    raise KeyError, s
+                    raise KeyError(s)
                 else:
                     log.error('Multiple matches found in user database.  '
                               'Removing the offending hostmasks.')
-                    for (id, hostmask) in ids.iteritems():
+                    for (id, hostmask) in ids.items():
                         log.error('Removing %q from user %s.', hostmask, id)
                         self.users[id].removeHostmask(hostmask)
-                    raise DuplicateHostmask, 'Ids %r matched.' % ids
+                    raise DuplicateHostmask('Ids %r matched.' % ids)
         else: # Not a hostmask, must be a name.
             s = s.lower()
             try:
                 return self._nameCache[s]
             except KeyError:
-                for (id, user) in self.users.items():
+                for (id, user) in list(self.users.items()):
                     if s == user.name.lower():
                         self._nameCache[s] = id
                         self._nameCache[id] = s
                         return id
                 else:
-                    raise KeyError, s
+                    raise KeyError(s)
 
     def getUser(self, id):
         """Returns a user given its id, name, or hostmask."""
@@ -718,11 +718,11 @@ class UsersDictionary(utils.IterableMap):
         self.nextId = max(self.nextId, user.id)
         try:
             if self.getUserId(user.name) != user.id:
-                raise DuplicateHostmask, hostmask
+                raise DuplicateHostmask(hostmask)
         except KeyError:
             pass
         for hostmask in user.hostmasks:
-            for (i, u) in self.iteritems():
+            for (i, u) in self.items():
                 if i == user.id:
                     continue
                 elif u.checkHostmask(hostmask):
@@ -731,10 +731,10 @@ class UsersDictionary(utils.IterableMap):
                     # raise an exception.  So instead, we'll raise an
                     # exception, but be nice and give the offending hostmask
                     # back at the same time.
-                    raise DuplicateHostmask, hostmask
+                    raise DuplicateHostmask(hostmask)
                 for otherHostmask in u.hostmasks:
                     if ircutils.hostmaskPatternEqual(hostmask, otherHostmask):
-                        raise DuplicateHostmask, hostmask
+                        raise DuplicateHostmask(hostmask)
         self.invalidateCache(user.id)
         self.users[user.id] = user
         if flush:
@@ -778,10 +778,10 @@ class ChannelsDictionary(utils.IterableMap):
                 reader.readFile(filename)
                 self.noFlush = False
                 self.flush()
-            except EnvironmentError, e:
+            except EnvironmentError as e:
                 log.error('Invalid channel database, resetting to empty.')
                 log.error('Exact error: %s', utils.exnToString(e))
-            except Exception, e:
+            except Exception as e:
                 log.error('Invalid channel database, resetting to empty.')
                 log.exception('Exact error:')
         finally:
@@ -792,7 +792,7 @@ class ChannelsDictionary(utils.IterableMap):
         if not self.noFlush:
             if self.filename is not None:
                 fd = utils.file.AtomicFile(self.filename)
-                for (channel, c) in self.channels.iteritems():
+                for (channel, c) in self.channels.items():
                     fd.write('channel %s' % channel)
                     fd.write(os.linesep)
                     c.preserve(fd, indent='  ')
@@ -814,7 +814,7 @@ class ChannelsDictionary(utils.IterableMap):
             self.channels.clear()
             try:
                 self.open(self.filename)
-            except EnvironmentError, e:
+            except EnvironmentError as e:
                 log.warning('ChannelsDictionary.reload failed: %s', e)
         else:
             log.warning('ChannelsDictionary.reload without self.filename.')
@@ -836,7 +836,7 @@ class ChannelsDictionary(utils.IterableMap):
         self.flush()
 
     def iteritems(self):
-        return self.channels.iteritems()
+        return iter(self.channels.items())
 
 
 class IgnoresDB(object):
@@ -857,7 +857,7 @@ class IgnoresDB(object):
                 else:
                     expiration = 0
                 self.add(hostmask, expiration)
-            except Exception, e:
+            except Exception as e:
                 log.error('Invalid line in ignores database: %q', line)
         fd.close()
 
@@ -865,7 +865,7 @@ class IgnoresDB(object):
         if self.filename is not None:
             fd = utils.file.AtomicFile(self.filename)
             now = time.time()
-            for (hostmask, expiration) in self.hostmasks.items():
+            for (hostmask, expiration) in list(self.hostmasks.items()):
                 if now < expiration or not expiration:
                     fd.write('%s %s' % (hostmask, expiration))
                     fd.write(os.linesep)
@@ -885,7 +885,7 @@ class IgnoresDB(object):
             self.hostmasks.clear()
             try:
                 self.open(self.filename)
-            except EnvironmentError, e:
+            except EnvironmentError as e:
                 log.warning('IgnoresDB.reload failed: %s', e)
                 # Let's be somewhat transactional.
                 self.hostmasks.update(oldhostmasks)
@@ -894,7 +894,7 @@ class IgnoresDB(object):
 
     def checkIgnored(self, prefix):
         now = time.time()
-        for (hostmask, expiration) in self.hostmasks.items():
+        for (hostmask, expiration) in list(self.hostmasks.items()):
             if expiration and now > expiration:
                 del self.hostmasks[hostmask]
             else:
@@ -915,7 +915,7 @@ try:
     userFile = os.path.join(confDir, conf.supybot.databases.users.filename())
     users = UsersDictionary()
     users.open(userFile)
-except EnvironmentError, e:
+except EnvironmentError as e:
     log.warning('Couldn\'t open user database: %s', e)
 
 try:
@@ -923,7 +923,7 @@ try:
                                conf.supybot.databases.channels.filename())
     channels = ChannelsDictionary()
     channels.open(channelFile)
-except EnvironmentError, e:
+except EnvironmentError as e:
     log.warning('Couldn\'t open channel database: %s', e)
 
 try:
@@ -931,7 +931,7 @@ try:
                               conf.supybot.databases.ignores.filename())
     ignores = IgnoresDB()
     ignores.open(ignoreFile)
-except EnvironmentError, e:
+except EnvironmentError as e:
     log.warning('Couldn\'t open ignore database: %s', e)
 
 
@@ -1009,7 +1009,7 @@ def checkCapability(hostmask, capability, users=users, channels=channels):
         # Raised when no hostmasks match.
         return _checkCapabilityForUnknownUser(capability, users=users,
                                               channels=channels)
-    except ValueError, e:
+    except ValueError as e:
         # Raised when multiple hostmasks match.
         log.warning('%s: %s', hostmask, e)
         return _checkCapabilityForUnknownUser(capability, users=users,
@@ -1064,9 +1064,9 @@ class DefaultCapabilities(registry.SpaceSeparatedListOfStrings):
     def setValue(self, v, allowDefaultOwner=conf.allowDefaultOwner):
         registry.SpaceSeparatedListOfStrings.setValue(self, v)
         if '-owner' not in self.value and not allowDefaultOwner:
-            print '*** You must run supybot with the --allow-default-owner'
-            print '*** option in order to allow a default capability of owner.'
-            print '*** Don\'t do that, it\'s dumb.'
+            print('*** You must run supybot with the --allow-default-owner')
+            print('*** option in order to allow a default capability of owner.')
+            print('*** Don\'t do that, it\'s dumb.')
             self.value.add('-owner')
 
 conf.registerGlobalValue(conf.supybot, 'capabilities',

@@ -259,7 +259,7 @@ class Channel(callbacks.Plugin):
             irc.error('I cowardly refuse to kick myself.', Raise=True)
         if not reason:
             reason = msg.nick
-        kicklen = irc.state.supported.get('kicklen', sys.maxint)
+        kicklen = irc.state.supported.get('kicklen', sys.maxsize)
         if len(reason) > kicklen:
             irc.error('The reason you gave is longer than the allowed '
                       'length for a KICK reason on this server.',
@@ -456,7 +456,7 @@ class Channel(callbacks.Plugin):
             Returns the channels in which this bot is lobotomized.
             """
             L = []
-            for (channel, c) in ircdb.channels.iteritems():
+            for (channel, c) in ircdb.channels.items():
                 if c.lobotomized:
                     chancap = ircdb.makeChannelCapability(channel, 'op')
                     if ircdb.checkCapability(msg.prefix, 'admin') or \
@@ -580,7 +580,7 @@ class Channel(callbacks.Plugin):
                 irc.reply(s)
             else:
                 L = sorted(c.ignores)
-                irc.reply(utils.str.commaAndify(map(repr, L)))
+                irc.reply(utils.str.commaAndify(list(map(repr, L))))
         list = wrap(list, ['op'])
 
     class capability(callbacks.Commands):
@@ -714,7 +714,7 @@ class Channel(callbacks.Plugin):
                                      'called %s.', plugin.name(), command)
         elif command:
             # findCallbackForCommand
-            if filter(None, irc.findCallbacksForArgs([command])):
+            if [_f for _f in irc.findCallbacksForArgs([command]) if _f]:
                 s = '-%s' % command
             else:
                 failMsg = format('No plugin or command named %s could be '
@@ -752,7 +752,7 @@ class Channel(callbacks.Plugin):
                                      'called %s.', plugin.name(), command)
         elif command:
             # findCallbackForCommand
-            if filter(None, irc.findCallbacksForArgs([command])):
+            if [_f for _f in irc.findCallbacksForArgs([command]) if _f]:
                 s = '-%s' % command
             else:
                 failMsg = format('No plugin or command named %s could be '

@@ -106,7 +106,7 @@ class Transaction(TransactionMixin):
             raise FailedAcquisition(self.txnDir)
         try:
             os.rename(self.txnDir, self.dir)
-        except EnvironmentError, e:
+        except EnvironmentError as e:
             raise FailedAcquisition(self.txnDir, e)
         os.mkdir(self.dirize(self.ORIGINALS))
         os.mkdir(self.dirize(self.REPLACEMENTS))

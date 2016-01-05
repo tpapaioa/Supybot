@@ -131,7 +131,7 @@ class Plugin(callbacks.Plugin):
             Sort the list of 'long names' based on the number of contributions
             associated with each.
             """
-            L = module.__contributors__.items()
+            L = list(module.__contributors__.items())
             def negativeSecondElement(x):
                 return -len(x[1])
             utils.sortBy(negativeSecondElement, L)
@@ -176,7 +176,7 @@ class Plugin(callbacks.Plugin):
             """
             isAuthor = False
             authorInfo = None
-            moduleContribs = module.__contributors__.keys()
+            moduleContribs = list(module.__contributors__.keys())
             lnick = nick.lower()
             for contrib in moduleContribs:
                 if contrib.nick.lower() == lnick:

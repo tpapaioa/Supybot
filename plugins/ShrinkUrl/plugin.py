@@ -79,7 +79,7 @@ class ShrinkUrl(callbacks.PluginRegexp):
     def callCommand(self, command, irc, msg, *args, **kwargs):
         try:
             self.__parent.callCommand(command, irc, msg, *args, **kwargs)
-        except utils.web.Error, e:
+        except utils.web.Error as e:
             irc.error(str(e))
 
     def _outFilterThread(self, irc, msg):
@@ -155,7 +155,7 @@ class ShrinkUrl(callbacks.PluginRegexp):
         except KeyError:
             text = utils.web.getUrl('http://tinyurl.com/api-create.php?url=' + url)
             if text.startswith('Error'):
-                raise ShrinkError, text[5:]
+                raise ShrinkError(text[5:])
             self.db.set('tiny', url, text)
             return text
 
@@ -169,7 +169,7 @@ class ShrinkUrl(callbacks.PluginRegexp):
             m = irc.reply(tinyurl)
             if m is not None:
                 m.tag('shrunken')
-        except ShrinkError, e:
+        except ShrinkError as e:
             irc.errorPossibleBug(str(e))
     tiny = thread(wrap(tiny, ['url']))
 
@@ -188,7 +188,7 @@ class ShrinkUrl(callbacks.PluginRegexp):
                 self.db.set('goo', url, googl)
                 return googl
             else:
-                raise ShrinkError, text
+                raise ShrinkError(text)
 
     def goo(self, irc, msg, args, url):
         """<url>
@@ -200,7 +200,7 @@ class ShrinkUrl(callbacks.PluginRegexp):
             m = irc.reply(goourl)
             if m is not None:
                 m.tag('shrunken')
-        except ShrinkError, e:
+        except ShrinkError as e:
             irc.error(str(e))
     goo = thread(wrap(goo, ['url']))
 
@@ -217,7 +217,7 @@ class ShrinkUrl(callbacks.PluginRegexp):
                 self.db.set('ur1', url, ur1ca)
                 return ur1ca
             else:
-                raise ShrinkError, text
+                raise ShrinkError(text)
 
     def ur1(self, irc, msg, args, url):
         """<url>
@@ -229,7 +229,7 @@ class ShrinkUrl(callbacks.PluginRegexp):
             m = irc.reply(ur1url)
             if m is not None:
                 m.tag('shrunken')
-        except ShrinkError, e:
+        except ShrinkError as e:
             irc.error(str(e))
     ur1 = thread(wrap(ur1, ['url']))
 
@@ -240,7 +240,7 @@ class ShrinkUrl(callbacks.PluginRegexp):
         except KeyError:
             text = utils.web.getUrl(self._x0Api % url)
             if text.startswith('ERROR:'):
-                raise ShrinkError, text[6:]
+                raise ShrinkError(text[6:])
             self.db.set('x0', url, text)
             return text
 
@@ -254,7 +254,7 @@ class ShrinkUrl(callbacks.PluginRegexp):
             m = irc.reply(x0url)
             if m is not None:
                 m.tag('shrunken')
-        except ShrinkError, e:
+        except ShrinkError as e:
             irc.error(str(e))
     x0 = thread(wrap(x0, ['url']))
 

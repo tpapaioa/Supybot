@@ -104,7 +104,7 @@ class AliasTestCase(ChannelPluginTestCase):
         self.assertResponse('foobar', 'sbbone')
         self.assertRaises(Alias.AliasError, cb.removeAlias, 'foobar')
         cb.removeAlias('foobar', evenIfLocked=True)
-        self.failIf('foobar' in cb.aliases)
+        self.assertFalse('foobar' in cb.aliases)
         self.assertError('foobar')
 
     def testOptionalArgs(self):

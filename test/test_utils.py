@@ -37,7 +37,7 @@ from supybot.utils.structures import *
 
 class UtilsTest(SupyTestCase):
     def testReversed(self):
-        L = range(10)
+        L = list(range(10))
         revL = list(reversed(L))
         L.reverse()
         self.assertEqual(L, revL, 'reversed didn\'t return reversed list')
@@ -47,13 +47,13 @@ class UtilsTest(SupyTestCase):
 
 class SeqTest(SupyTestCase):
     def testRenumerate(self):
-        for i in xrange(5):
+        for i in range(5):
             L = list(enumerate(range(i)))
-            LL = list(utils.seq.renumerate(range(i)))
+            LL = list(utils.seq.renumerate(list(range(i))))
             self.assertEqual(L, LL[::-1])
         
     def testWindow(self):
-        L = range(10)
+        L = list(range(10))
         def wwindow(*args):
             return list(utils.seq.window(*args))
         self.assertEqual(wwindow([], 1), [], 'Empty sequence, empty window')
@@ -70,24 +70,24 @@ class GenTest(SupyTestCase):
     def testInsensitivePreservingDict(self):
         ipd = utils.InsensitivePreservingDict
         d = ipd(dict(Foo=10))
-        self.failUnless(d['foo'] == 10)
-        self.assertEqual(d.keys(), ['Foo'])
+        self.assertTrue(d['foo'] == 10)
+        self.assertEqual(list(d.keys()), ['Foo'])
         self.assertEqual(d.get('foo'), 10)
         self.assertEqual(d.get('Foo'), 10)
 
     def testFindBinaryInPath(self):
         if os.name == 'posix':
             self.assertEqual(None, utils.findBinaryInPath('asdfhjklasdfhjkl'))
-            self.failUnless(utils.findBinaryInPath('sh').endswith('/bin/sh'))
+            self.assertTrue(utils.findBinaryInPath('sh').endswith('/bin/sh'))
 
     def testExnToString(self):
         try:
-            raise KeyError, 1
-        except Exception, e:
+            raise KeyError(1)
+        except Exception as e:
             self.assertEqual(utils.exnToString(e), 'KeyError: 1')
         try:
             raise EOFError
-        except Exception, e:
+        except Exception as e:
             self.assertEqual(utils.exnToString(e), 'EOFError')
 
     def testSaltHash(self):
@@ -118,17 +118,17 @@ class GenTest(SupyTestCase):
                 for (k, v) in self.L:
                     yield (k, v)
         AL = alist()
-        self.failIf(AL)
+        self.assertFalse(AL)
         AL[1] = 2
         AL[2] = 3
         AL[3] = 4
-        self.failUnless(AL)
-        self.assertEqual(AL.items(), [(1, 2), (2, 3), (3, 4)])
-        self.assertEqual(list(AL.iteritems()), [(1, 2), (2, 3), (3, 4)])
-        self.assertEqual(AL.keys(), [1, 2, 3])
-        self.assertEqual(list(AL.iterkeys()), [1, 2, 3])
-        self.assertEqual(AL.values(), [2, 3, 4])
-        self.assertEqual(list(AL.itervalues()), [2, 3, 4])
+        self.assertTrue(AL)
+        self.assertEqual(list(AL.items()), [(1, 2), (2, 3), (3, 4)])
+        self.assertEqual(list(AL.items()), [(1, 2), (2, 3), (3, 4)])
+        self.assertEqual(list(AL.keys()), [1, 2, 3])
+        self.assertEqual(list(AL.keys()), [1, 2, 3])
+        self.assertEqual(list(AL.values()), [2, 3, 4])
+        self.assertEqual(list(AL.values()), [2, 3, 4])
         self.assertEqual(len(AL), 3)
 
     def testSortBy(self):
@@ -266,25 +266,25 @@ class StrTest(SupyTestCase):
         for s in L:
             r = utils.str.dqrepr(s)
             self.assertEqual(s, eval(r), s)
-            self.failUnless(r[0] == '"' and r[-1] == '"', s)
+            self.assertTrue(r[0] == '"' and r[-1] == '"', s)
 
     def testPerlReToPythonRe(self):
         f = utils.str.perlReToPythonRe
         r = f('m/foo/')
-        self.failUnless(r.search('foo'))
+        self.assertTrue(r.search('foo'))
         r = f('/foo/')
-        self.failUnless(r.search('foo'))
+        self.assertTrue(r.search('foo'))
         r = f('m/\\//')
-        self.failUnless(r.search('/'))
+        self.assertTrue(r.search('/'))
         r = f('m/cat/i')
-        self.failUnless(r.search('CAT'))
+        self.assertTrue(r.search('CAT'))
         self.assertRaises(ValueError, f, 'm/?/')
 
     def testP2PReDifferentSeparator(self):
         r = utils.str.perlReToPythonRe('m!foo!')
-        self.failUnless(r.search('foo'))
+        self.assertTrue(r.search('foo'))
         r = utils.str.perlReToPythonRe('m{cat}')
-        self.failUnless(r.search('cat'))
+        self.assertTrue(r.search('cat'))
 
     def testPerlReToReplacer(self):
         PRTR = utils.str.perlReToReplacer
@@ -337,7 +337,7 @@ class StrTest(SupyTestCase):
         self.assertEqual(f(L, comma=';', And='or'),
                          'foo; bar; or baz')
         self.assertEqual(L, original)
-        self.failUnless(f(set(L)))
+        self.assertTrue(f(set(L)))
 
     def testCommaAndifyRaisesTypeError(self):
         L = [(2,)]
@@ -375,17 +375,17 @@ class StrTest(SupyTestCase):
     def testEllipsisify(self):
         f = utils.str.ellipsisify
         self.assertEqual(f('x'*30, 30), 'x'*30)
-        self.failUnless(len(f('x'*35, 30)) <= 30)
-        self.failUnless(f(' '.join(['xxxx']*10), 30)[:-3].endswith('xxxx'))
+        self.assertTrue(len(f('x'*35, 30)) <= 30)
+        self.assertTrue(f(' '.join(['xxxx']*10), 30)[:-3].endswith('xxxx'))
 
 
 class IterTest(SupyTestCase):
     def testLimited(self):
-        L = range(10)
+        L = list(range(10))
         self.assertEqual([], list(utils.iter.limited(L, 0)))
         self.assertEqual([0], list(utils.iter.limited(L, 1)))
         self.assertEqual([0, 1], list(utils.iter.limited(L, 2)))
-        self.assertEqual(range(10), list(utils.iter.limited(L, 10)))
+        self.assertEqual(list(range(10)), list(utils.iter.limited(L, 10)))
         self.assertRaises(ValueError, list, utils.iter.limited(L, 11))
 
     def testRandomChoice(self):
@@ -396,7 +396,7 @@ class IterTest(SupyTestCase):
         L = [1, 2]
         seenList = set()
         seenIterable = set()
-        for n in xrange(300):
+        for n in range(300):
             # 2**266 > 10**80, the number of atoms in the known universe.
             # (ignoring dark matter, but that likely doesn't exist in atoms
             #  anyway, so it shouldn't have a significant impact on that #)
@@ -417,22 +417,22 @@ class IterTest(SupyTestCase):
 
     def testAny(self):
         any = utils.iter.any
-        self.failUnless(any(lambda i: i == 0, range(10)))
-        self.failIf(any(None, range(1)))
-        self.failUnless(any(None, range(2)))
-        self.failIf(any(None, []))
+        self.assertTrue(any(lambda i: i == 0, list(range(10))))
+        self.assertFalse(any(None, list(range(1))))
+        self.assertTrue(any(None, list(range(2))))
+        self.assertFalse(any(None, []))
 
     def testAll(self):
         all = utils.iter.all
-        self.failIf(all(lambda i: i == 0, range(10)))
-        self.failIf(all(lambda i: i % 2, range(2)))
-        self.failIf(all(lambda i: i % 2 == 0, [1, 3, 5]))
-        self.failUnless(all(lambda i: i % 2 == 0, [2, 4, 6]))
-        self.failUnless(all(None, ()))
+        self.assertFalse(all(lambda i: i == 0, list(range(10))))
+        self.assertFalse(all(lambda i: i % 2, list(range(2))))
+        self.assertFalse(all(lambda i: i % 2 == 0, [1, 3, 5]))
+        self.assertTrue(all(lambda i: i % 2 == 0, [2, 4, 6]))
+        self.assertTrue(all(None, ()))
 
     def testPartition(self):
         partition = utils.iter.partition
-        L = range(10)
+        L = list(range(10))
         def even(i):
             return not(i % 2)
         (yes, no) = partition(even, L)
@@ -441,7 +441,7 @@ class IterTest(SupyTestCase):
 
     def testIlen(self):
         ilen = utils.iter.ilen
-        self.assertEqual(ilen(iter(range(10))), 10)
+        self.assertEqual(ilen(iter(list(range(10)))), 10)
 
     def testSplit(self):
         itersplit = utils.iter.split
@@ -453,7 +453,7 @@ class IterTest(SupyTestCase):
                          [[1, 2], [1, 2], [1, 2], []])
         self.assertEqual(list(itersplit(lambda x: x, [])), [])
         self.assertEqual(list(itersplit(lambda c: c.isspace(), s)),
-                         map(list, s.split()))
+                         list(map(list, s.split())))
         self.assertEqual(list(itersplit('for'.__eq__, ['foo', 'for', 'bar'])),
                          [['foo'], ['bar']])
         self.assertEqual(list(itersplit('for'.__eq__,
@@ -465,10 +465,10 @@ class IterTest(SupyTestCase):
             return list(utils.iter.flatten(seq))
         self.assertEqual(lflatten([]), [])
         self.assertEqual(lflatten([1]), [1])
-        self.assertEqual(lflatten(range(10)), range(10))
-        twoRanges = range(10)*2
+        self.assertEqual(lflatten(list(range(10))), list(range(10)))
+        twoRanges = list(range(10))*2
         twoRanges.sort()
-        self.assertEqual(lflatten(zip(range(10), range(10))), twoRanges)
+        self.assertEqual(lflatten(list(zip(list(range(10)), list(range(10))))), twoRanges)
         self.assertEqual(lflatten([1, [2, 3], 4]), [1, 2, 3, 4])
         self.assertEqual(lflatten([[[[[[[[[[]]]]]]]]]]), [])
         self.assertEqual(lflatten([1, [2, [3, 4], 5], 6]), [1, 2, 3, 4, 5, 6])
@@ -487,28 +487,28 @@ class FileTest(SupyTestCase):
 
     def testMktemp(self):
         # This is mostly to test that it actually halts.
-        self.failUnless(utils.file.mktemp())
-        self.failUnless(utils.file.mktemp())
-        self.failUnless(utils.file.mktemp())
+        self.assertTrue(utils.file.mktemp())
+        self.assertTrue(utils.file.mktemp())
+        self.assertTrue(utils.file.mktemp())
 
 
 class NetTest(SupyTestCase):
     def testEmailRe(self):
         emailRe = utils.net.emailRe
-        self.failUnless(emailRe.match('jemfinch@supybot.com'))
+        self.assertTrue(emailRe.match('jemfinch@supybot.com'))
 
     def testIsIP(self):
         isIP = utils.net.isIP
-        self.failIf(isIP('a.b.c'))
-        self.failIf(isIP('256.0.0.0'))
-        self.failUnless(isIP('0.0.0.0'))
-        self.failUnless(isIP('100.100.100.100'))
-        self.failUnless(isIP('255.255.255.255'))
+        self.assertFalse(isIP('a.b.c'))
+        self.assertFalse(isIP('256.0.0.0'))
+        self.assertTrue(isIP('0.0.0.0'))
+        self.assertTrue(isIP('100.100.100.100'))
+        self.assertTrue(isIP('255.255.255.255'))
 
     def testIsIPV6(self):
         f = utils.net.isIPV6
-        self.failUnless(f('2001::'))
-        self.failUnless(f('2001:888:0:1::666'))
+        self.assertTrue(f('2001::'))
+        self.assertTrue(f('2001:888:0:1::666'))
 
 class WebTest(SupyTestCase):
     def testGetDomain(self):
@@ -518,7 +518,7 @@ class WebTest(SupyTestCase):
     if network:
         def testGetUrlWithSize(self):
             url = 'http://slashdot.org/'
-            self.failUnless(len(utils.web.getUrl(url, 1024)) == 1024)
+            self.assertTrue(len(utils.web.getUrl(url, 1024)) == 1024)
 
 class FormatTestCase(SupyTestCase):
     def testNormal(self):
@@ -532,7 +532,7 @@ class RingBufferTestCase(SupyTestCase):
     def testInit(self):
         self.assertRaises(ValueError, RingBuffer, -1)
         self.assertRaises(ValueError, RingBuffer, 0)
-        self.assertEqual(range(10), list(RingBuffer(10, range(10))))
+        self.assertEqual(list(range(10)), list(RingBuffer(10, list(range(10)))))
 
     def testLen(self):
         b = RingBuffer(3)
@@ -550,9 +550,9 @@ class RingBufferTestCase(SupyTestCase):
 
     def testNonzero(self):
         b = RingBuffer(3)
-        self.failIf(b)
+        self.assertFalse(b)
         b.append(1)
-        self.failUnless(b)
+        self.assertTrue(b)
 
     def testAppend(self):
         b = RingBuffer(3)
@@ -571,14 +571,14 @@ class RingBufferTestCase(SupyTestCase):
         self.assertEqual([4, 5, 6], list(b))
 
     def testContains(self):
-        b = RingBuffer(3, range(3))
-        self.failUnless(0 in b)
-        self.failUnless(1 in b)
-        self.failUnless(2 in b)
-        self.failIf(3 in b)
+        b = RingBuffer(3, list(range(3)))
+        self.assertTrue(0 in b)
+        self.assertTrue(1 in b)
+        self.assertTrue(2 in b)
+        self.assertFalse(3 in b)
 
     def testGetitem(self):
-        L = range(10)
+        L = list(range(10))
         b = RingBuffer(len(L), L)
         for i in range(len(b)):
             self.assertEqual(L[i], b[i])
@@ -592,7 +592,7 @@ class RingBufferTestCase(SupyTestCase):
             self.assertEqual(list(b), list(b[:i]) + list(b[i:]))
 
     def testSliceGetitem(self):
-        L = range(10)
+        L = list(range(10))
         b = RingBuffer(len(L), L)
         for i in range(len(b)):
             self.assertEqual(L[:i], b[:i])
@@ -612,7 +612,7 @@ class RingBufferTestCase(SupyTestCase):
             self.assertEqual(L[i:-i], b[i:-i])
 
     def testSetitem(self):
-        L = range(10)
+        L = list(range(10))
         b = RingBuffer(len(L), [0]*len(L))
         for i in range(len(b)):
             b[i] = i
@@ -626,21 +626,21 @@ class RingBufferTestCase(SupyTestCase):
             self.assertEqual(b[i], i)
 
     def testSliceSetitem(self):
-        L = range(10)
+        L = list(range(10))
         b = RingBuffer(len(L), [0]*len(L))
         self.assertRaises(ValueError, b.__setitem__, slice(0, 10), [])
         b[2:4] = L[2:4]
-        self.assertEquals(b[2:4], L[2:4])
+        self.assertEqual(b[2:4], L[2:4])
         for _ in range(len(b)):
             b.append(0)
         b[2:4] = L[2:4]
-        self.assertEquals(b[2:4], L[2:4])
+        self.assertEqual(b[2:4], L[2:4])
 
     def testExtend(self):
-        b = RingBuffer(3, range(3))
-        self.assertEqual(list(b), range(3))
-        b.extend(range(6))
-        self.assertEqual(list(b), range(6)[3:])
+        b = RingBuffer(3, list(range(3)))
+        self.assertEqual(list(b), list(range(3)))
+        b.extend(list(range(6)))
+        self.assertEqual(list(b), list(range(6))[3:])
 
     def testRepr(self):
         b = RingBuffer(3)
@@ -659,36 +659,36 @@ class RingBufferTestCase(SupyTestCase):
         self.assertEqual(repr(b), 'RingBuffer(3, [4, 5, 6])')
 
     def testPickleCopy(self):
-        b = RingBuffer(10, range(10))
+        b = RingBuffer(10, list(range(10)))
         self.assertEqual(pickle.loads(pickle.dumps(b)), b)
 
     def testEq(self):
-        b = RingBuffer(3, range(3))
-        self.failIf(b == range(3))
+        b = RingBuffer(3, list(range(3)))
+        self.assertFalse(b == list(range(3)))
         b1 = RingBuffer(3)
-        self.failIf(b == b1)
+        self.assertFalse(b == b1)
         b1.append(0)
-        self.failIf(b == b1)
+        self.assertFalse(b == b1)
         b1.append(1)
-        self.failIf(b == b1)
+        self.assertFalse(b == b1)
         b1.append(2)
-        self.failUnless(b == b1)
-        b = RingBuffer(100, range(10))
-        b1 = RingBuffer(10, range(10))
-        self.failIf(b == b1)
+        self.assertTrue(b == b1)
+        b = RingBuffer(100, list(range(10)))
+        b1 = RingBuffer(10, list(range(10)))
+        self.assertFalse(b == b1)
 
     def testIter(self):
-        b = RingBuffer(3, range(3))
+        b = RingBuffer(3, list(range(3)))
         L = []
         for elt in b:
             L.append(elt)
-        self.assertEqual(L, range(3))
+        self.assertEqual(L, list(range(3)))
         for elt in range(3):
             b.append(elt)
         del L[:]
         for elt in b:
             L.append(elt)
-        self.assertEqual(L, range(3))
+        self.assertEqual(L, list(range(3)))
 
 
 class QueueTest(SupyTestCase):
@@ -703,13 +703,13 @@ class QueueTest(SupyTestCase):
         q = queue()
         n = 10
         self.assertRaises(IndexError, q.__getitem__, 0)
-        for i in xrange(n):
+        for i in range(n):
             q.enqueue(i)
-        for i in xrange(n):
+        for i in range(n):
             self.assertEqual(q[i], i)
-        for i in xrange(n, 0, -1):
+        for i in range(n, 0, -1):
             self.assertEqual(q[-i], n-i)
-        for i in xrange(len(q)):
+        for i in range(len(q)):
             self.assertEqual(list(q), list(q[:i]) + list(q[i:]))
         self.assertRaises(IndexError, q.__getitem__, -(n+1))
         self.assertRaises(IndexError, q.__getitem__, n)
@@ -718,7 +718,7 @@ class QueueTest(SupyTestCase):
     def testSetitem(self):
         q1 = queue()
         self.assertRaises(IndexError, q1.__setitem__, 0, 0)
-        for i in xrange(10):
+        for i in range(10):
             q1.enqueue(i)
         q2 = eval(repr(q1))
         for (i, elt) in enumerate(q2):
@@ -727,11 +727,11 @@ class QueueTest(SupyTestCase):
 
     def testNonzero(self):
         q = queue()
-        self.failIf(q, 'queue not zero after initialization')
+        self.assertFalse(q, 'queue not zero after initialization')
         q.enqueue(1)
-        self.failUnless(q, 'queue zero after adding element')
+        self.assertTrue(q, 'queue zero after adding element')
         q.dequeue()
-        self.failIf(q, 'queue not zero after dequeue of only element')
+        self.assertFalse(q, 'queue not zero after dequeue of only element')
 
     def testLen(self):
         q = queue()
@@ -745,31 +745,31 @@ class QueueTest(SupyTestCase):
         q.dequeue()
         self.assertEqual(0, len(q), 'queue len not 0 after dequeue')
         for i in range(10):
-            L = range(i)
+            L = list(range(i))
             q = queue(L)
             self.assertEqual(len(q), i)
 
     def testEq(self):
         q1 = queue()
         q2 = queue()
-        self.failUnless(q1 == q1, 'queue not equal to itself')
-        self.failUnless(q2 == q2, 'queue not equal to itself')
-        self.failUnless(q1 == q2, 'initialized queues not equal')
+        self.assertTrue(q1 == q1, 'queue not equal to itself')
+        self.assertTrue(q2 == q2, 'queue not equal to itself')
+        self.assertTrue(q1 == q2, 'initialized queues not equal')
         q1.enqueue(1)
-        self.failUnless(q1 == q1, 'queue not equal to itself')
-        self.failUnless(q2 == q2, 'queue not equal to itself')
+        self.assertTrue(q1 == q1, 'queue not equal to itself')
+        self.assertTrue(q2 == q2, 'queue not equal to itself')
         q2.enqueue(1)
-        self.failUnless(q1 == q1, 'queue not equal to itself')
-        self.failUnless(q2 == q2, 'queue not equal to itself')
-        self.failUnless(q1 == q2, 'queues not equal after identical enqueue')
+        self.assertTrue(q1 == q1, 'queue not equal to itself')
+        self.assertTrue(q2 == q2, 'queue not equal to itself')
+        self.assertTrue(q1 == q2, 'queues not equal after identical enqueue')
         q1.dequeue()
-        self.failUnless(q1 == q1, 'queue not equal to itself')
-        self.failUnless(q2 == q2, 'queue not equal to itself')
-        self.failIf(q1 == q2, 'queues equal after one dequeue')
+        self.assertTrue(q1 == q1, 'queue not equal to itself')
+        self.assertTrue(q2 == q2, 'queue not equal to itself')
+        self.assertFalse(q1 == q2, 'queues equal after one dequeue')
         q2.dequeue()
-        self.failUnless(q1 == q2, 'queues not equal after both are dequeued')
-        self.failUnless(q1 == q1, 'queue not equal to itself')
-        self.failUnless(q2 == q2, 'queue not equal to itself')
+        self.assertTrue(q1 == q2, 'queues not equal after both are dequeued')
+        self.assertTrue(q1 == q1, 'queue not equal to itself')
+        self.assertTrue(q2 == q2, 'queue not equal to itself')
 
     def testInit(self):
         self.assertEqual(len(queue()), 0, 'queue len not 0 after init')
@@ -829,17 +829,17 @@ class QueueTest(SupyTestCase):
 
     def testContains(self):
         q = queue()
-        self.failIf(1 in q, 'empty queue cannot have elements')
+        self.assertFalse(1 in q, 'empty queue cannot have elements')
         q.enqueue(1)
-        self.failUnless(1 in q, 'recent enqueued element not in q')
+        self.assertTrue(1 in q, 'recent enqueued element not in q')
         q.enqueue(2)
-        self.failUnless(1 in q, 'original enqueued element not in q')
-        self.failUnless(2 in q, 'second enqueued element not in q')
+        self.assertTrue(1 in q, 'original enqueued element not in q')
+        self.assertTrue(2 in q, 'second enqueued element not in q')
         q.dequeue()
-        self.failIf(1 in q, 'dequeued element in q')
-        self.failUnless(2 in q, 'not dequeued element not in q')
+        self.assertFalse(1 in q, 'dequeued element in q')
+        self.assertTrue(2 in q, 'not dequeued element not in q')
         q.dequeue()
-        self.failIf(2 in q, 'dequeued element in q')
+        self.assertFalse(2 in q, 'dequeued element in q')
 
     def testIter(self):
         q1 = queue((1, 2, 3))
@@ -851,7 +851,7 @@ class QueueTest(SupyTestCase):
             self.fail('no elements should be in empty queue')
 
     def testPickleCopy(self):
-        q = queue(range(10))
+        q = queue(list(range(10)))
         self.assertEqual(q, pickle.loads(pickle.dumps(q)))
 
 queue = smallqueue
@@ -868,13 +868,13 @@ class SmallQueueTest(SupyTestCase):
         q = queue()
         n = 10
         self.assertRaises(IndexError, q.__getitem__, 0)
-        for i in xrange(n):
+        for i in range(n):
             q.enqueue(i)
-        for i in xrange(n):
+        for i in range(n):
             self.assertEqual(q[i], i)
-        for i in xrange(n, 0, -1):
+        for i in range(n, 0, -1):
             self.assertEqual(q[-i], n-i)
-        for i in xrange(len(q)):
+        for i in range(len(q)):
             self.assertEqual(list(q), list(q[:i]) + list(q[i:]))
         self.assertRaises(IndexError, q.__getitem__, -(n+1))
         self.assertRaises(IndexError, q.__getitem__, n)
@@ -883,7 +883,7 @@ class SmallQueueTest(SupyTestCase):
     def testSetitem(self):
         q1 = queue()
         self.assertRaises(IndexError, q1.__setitem__, 0, 0)
-        for i in xrange(10):
+        for i in range(10):
             q1.enqueue(i)
         q2 = eval(repr(q1))
         for (i, elt) in enumerate(q2):
@@ -892,11 +892,11 @@ class SmallQueueTest(SupyTestCase):
 
     def testNonzero(self):
         q = queue()
-        self.failIf(q, 'queue not zero after initialization')
+        self.assertFalse(q, 'queue not zero after initialization')
         q.enqueue(1)
-        self.failUnless(q, 'queue zero after adding element')
+        self.assertTrue(q, 'queue zero after adding element')
         q.dequeue()
-        self.failIf(q, 'queue not zero after dequeue of only element')
+        self.assertFalse(q, 'queue not zero after dequeue of only element')
 
     def testLen(self):
         q = queue()
@@ -910,31 +910,31 @@ class SmallQueueTest(SupyTestCase):
         q.dequeue()
         self.assertEqual(0, len(q), 'queue len not 0 after dequeue')
         for i in range(10):
-            L = range(i)
+            L = list(range(i))
             q = queue(L)
             self.assertEqual(len(q), i)
 
     def testEq(self):
         q1 = queue()
         q2 = queue()
-        self.failUnless(q1 == q1, 'queue not equal to itself')
-        self.failUnless(q2 == q2, 'queue not equal to itself')
-        self.failUnless(q1 == q2, 'initialized queues not equal')
+        self.assertTrue(q1 == q1, 'queue not equal to itself')
+        self.assertTrue(q2 == q2, 'queue not equal to itself')
+        self.assertTrue(q1 == q2, 'initialized queues not equal')
         q1.enqueue(1)
-        self.failUnless(q1 == q1, 'queue not equal to itself')
-        self.failUnless(q2 == q2, 'queue not equal to itself')
+        self.assertTrue(q1 == q1, 'queue not equal to itself')
+        self.assertTrue(q2 == q2, 'queue not equal to itself')
         q2.enqueue(1)
-        self.failUnless(q1 == q1, 'queue not equal to itself')
-        self.failUnless(q2 == q2, 'queue not equal to itself')
-        self.failUnless(q1 == q2, 'queues not equal after identical enqueue')
+        self.assertTrue(q1 == q1, 'queue not equal to itself')
+        self.assertTrue(q2 == q2, 'queue not equal to itself')
+        self.assertTrue(q1 == q2, 'queues not equal after identical enqueue')
         q1.dequeue()
-        self.failUnless(q1 == q1, 'queue not equal to itself')
-        self.failUnless(q2 == q2, 'queue not equal to itself')
-        self.failIf(q1 == q2, 'queues equal after one dequeue')
+        self.assertTrue(q1 == q1, 'queue not equal to itself')
+        self.assertTrue(q2 == q2, 'queue not equal to itself')
+        self.assertFalse(q1 == q2, 'queues equal after one dequeue')
         q2.dequeue()
-        self.failUnless(q1 == q2, 'queues not equal after both are dequeued')
-        self.failUnless(q1 == q1, 'queue not equal to itself')
-        self.failUnless(q2 == q2, 'queue not equal to itself')
+        self.assertTrue(q1 == q2, 'queues not equal after both are dequeued')
+        self.assertTrue(q1 == q1, 'queue not equal to itself')
+        self.assertTrue(q2 == q2, 'queue not equal to itself')
 
     def testInit(self):
         self.assertEqual(len(queue()), 0, 'queue len not 0 after init')
@@ -994,17 +994,17 @@ class SmallQueueTest(SupyTestCase):
 
     def testContains(self):
         q = queue()
-        self.failIf(1 in q, 'empty queue cannot have elements')
+        self.assertFalse(1 in q, 'empty queue cannot have elements')
         q.enqueue(1)
-        self.failUnless(1 in q, 'recent enqueued element not in q')
+        self.assertTrue(1 in q, 'recent enqueued element not in q')
         q.enqueue(2)
-        self.failUnless(1 in q, 'original enqueued element not in q')
-        self.failUnless(2 in q, 'second enqueued element not in q')
+        self.assertTrue(1 in q, 'original enqueued element not in q')
+        self.assertTrue(2 in q, 'second enqueued element not in q')
         q.dequeue()
-        self.failIf(1 in q, 'dequeued element in q')
-        self.failUnless(2 in q, 'not dequeued element not in q')
+        self.assertFalse(1 in q, 'dequeued element in q')
+        self.assertTrue(2 in q, 'not dequeued element not in q')
         q.dequeue()
-        self.failIf(2 in q, 'dequeued element in q')
+        self.assertFalse(2 in q, 'dequeued element in q')
 
     def testIter(self):
         q1 = queue((1, 2, 3))
@@ -1016,7 +1016,7 @@ class SmallQueueTest(SupyTestCase):
             self.fail('no elements should be in empty queue')
 
     def testPickleCopy(self):
-        q = queue(range(10))
+        q = queue(list(range(10)))
         self.assertEqual(q, pickle.loads(pickle.dumps(q)))
 
 
@@ -1045,28 +1045,28 @@ class MaxLengthQueueTestCase(SupyTestCase):
 class TwoWayDictionaryTestCase(SupyTestCase):
     def testInit(self):
         d = TwoWayDictionary(foo='bar')
-        self.failUnless('foo' in d)
-        self.failUnless('bar' in d)
+        self.assertTrue('foo' in d)
+        self.assertTrue('bar' in d)
 
         d = TwoWayDictionary({1: 2})
-        self.failUnless(1 in d)
-        self.failUnless(2 in d)
+        self.assertTrue(1 in d)
+        self.assertTrue(2 in d)
 
     def testSetitem(self):
         d = TwoWayDictionary()
         d['foo'] = 'bar'
-        self.failUnless('foo' in d)
-        self.failUnless('bar' in d)
+        self.assertTrue('foo' in d)
+        self.assertTrue('bar' in d)
 
     def testDelitem(self):
         d = TwoWayDictionary(foo='bar')
         del d['foo']
-        self.failIf('foo' in d)
-        self.failIf('bar' in d)
+        self.assertFalse('foo' in d)
+        self.assertFalse('bar' in d)
         d = TwoWayDictionary(foo='bar')
         del d['bar']
-        self.failIf('bar' in d)
-        self.failIf('foo' in d)
+        self.assertFalse('bar' in d)
+        self.assertFalse('foo' in d)
 
 
 class TestTimeoutQueue(SupyTestCase):
@@ -1099,28 +1099,28 @@ class TestTimeoutQueue(SupyTestCase):
     def testContains(self):
         q = TimeoutQueue(1)
         q.enqueue(1)
-        self.failUnless(1 in q)
-        self.failUnless(1 in q) # For some reason, the second one might fail.
-        self.failIf(2 in q)
+        self.assertTrue(1 in q)
+        self.assertTrue(1 in q) # For some reason, the second one might fail.
+        self.assertFalse(2 in q)
         time.sleep(1.1)
-        self.failIf(1 in q)
+        self.assertFalse(1 in q)
 
     def testReset(self):
         q = TimeoutQueue(10)
         q.enqueue(1)
-        self.failUnless(1 in q)
+        self.assertTrue(1 in q)
         q.reset()
-        self.failIf(1 in q)
+        self.assertFalse(1 in q)
 
 class TestCacheDict(SupyTestCase):
     def testMaxNeverExceeded(self):
         max = 10
         d = CacheDict(10)
-        for i in xrange(max**2):
+        for i in range(max**2):
             d[i] = i
-            self.failUnless(len(d) <= max)
-            self.failUnless(i in d)
-            self.failUnless(d[i] == i)
+            self.assertTrue(len(d) <= max)
+            self.assertTrue(i in d)
+            self.assertTrue(d[i] == i)
             
 
 # vim:set shiftwidth=4 softtabstop=4 expandtab textwidth=79:

@@ -78,7 +78,7 @@ class TestPlugin(callbacks.Plugin):
             irc.reply(repr(eval(' '.join(args))))
         except callbacks.ArgumentError:
             raise
-        except Exception, e:
+        except Exception as e:
             irc.reply(utils.exnToString(e))
 # Since we know we don't now need the Irc object, we just give None.  This
 # might break if callbacks.Privmsg ever *requires* the Irc object.
@@ -116,8 +116,8 @@ class PluginTestCase(SupyTestCase):
                 for cb in self.irc.callbacks:
                     cbModule = sys.modules[cb.__class__.__module__]
                     if hasattr(cbModule, 'deprecated') and cbModule.deprecated:
-                        print
-                        print 'Ignored, %s is deprecated.' % cb.name()
+                        print()
+                        print('Ignored, %s is deprecated.' % cb.name())
                         run = False
             if run:
                 originalRunTest()
@@ -155,7 +155,7 @@ class PluginTestCase(SupyTestCase):
         ircdb.ignores.reload()
         ircdb.channels.reload()
         if self.plugins is None:
-            raise ValueError, 'PluginTestCase must have a "plugins" attribute.'
+            raise ValueError('PluginTestCase must have a "plugins" attribute.')
         self.nick = nick
         self.prefix = ircutils.joinHostmask(nick, 'user', 'host.domain.tld')
         self.irc = getTestIrc()
@@ -174,7 +174,7 @@ class PluginTestCase(SupyTestCase):
                                                      ignoreDeprecation=True)
                     cb = plugin.loadPluginClass(self.irc, module)
         self.irc.addCallback(TestInstance)
-        for (name, value) in self.config.iteritems():
+        for (name, value) in self.config.items():
             group = conf.supybot
             parts = registry.split(name)
             if parts[0] == 'supybot':
@@ -188,7 +188,7 @@ class PluginTestCase(SupyTestCase):
         if self.__class__ in (PluginTestCase, ChannelPluginTestCase):
             # Necessary because there's a test in here that shouldn\'t run.
             return
-        for (group, original) in self.originals.iteritems():
+        for (group, original) in self.originals.items():
             group.setValue(original)
         ircdb.users.close()
         ircdb.ignores.close()
@@ -206,13 +206,13 @@ class PluginTestCase(SupyTestCase):
         if timeout is None:
             timeout = self.timeout
         if self.myVerbose:
-            print # Extra newline, so it's pretty.
+            print() # Extra newline, so it's pretty.
         prefixChars = conf.supybot.reply.whenAddressedBy.chars()
         if not usePrefixChar and query[0] in prefixChars:
             query = query[1:]
         msg = ircmsgs.privmsg(to, query, prefix=frm)
         if self.myVerbose:
-            print 'Feeding: %r' % msg
+            print('Feeding: %r' % msg)
         self.irc.feedMsg(msg)
         fed = time.time()
         response = self.irc.takeMsg()
@@ -221,7 +221,7 @@ class PluginTestCase(SupyTestCase):
             drivers.run()
             response = self.irc.takeMsg()
         if self.myVerbose:
-            print 'Response: %r' % response
+            print('Response: %r' % response)
         return response
 
     def getMsg(self, query, **kwargs):
@@ -242,9 +242,9 @@ class PluginTestCase(SupyTestCase):
     def assertError(self, query, **kwargs):
         m = self._feedMsg(query, **kwargs)
         if m is None:
-            raise TimeoutError, query
+            raise TimeoutError(query)
         if lastGetHelp not in m.args[1]:
-            self.failUnless(m.args[1].startswith('Error:'),
+            self.assertTrue(m.args[1].startswith('Error:'),
                             '%r did not error: %s' % (query, m.args[1]))
         return m
 
@@ -254,10 +254,10 @@ class PluginTestCase(SupyTestCase):
     def assertNotError(self, query, **kwargs):
         m = self._feedMsg(query, **kwargs)
         if m is None:
-            raise TimeoutError, query
-        self.failIf(m.args[1].startswith('Error:'),
+            raise TimeoutError(query)
+        self.assertFalse(m.args[1].startswith('Error:'),
                     '%r errored: %s' % (query, m.args[1]))
-        self.failIf(lastGetHelp in m.args[1],
+        self.assertFalse(lastGetHelp in m.args[1],
                     '%r returned the help string.' % query)
         return m
 
@@ -267,14 +267,14 @@ class PluginTestCase(SupyTestCase):
     def assertHelp(self, query, **kwargs):
         m = self._feedMsg(query, **kwargs)
         if m is None:
-            raise TimeoutError, query
-        self.failUnless(lastGetHelp in m.args[1],
+            raise TimeoutError(query)
+        self.assertTrue(lastGetHelp in m.args[1],
                         '%s is not the help (%s)' % (m.args[1], lastGetHelp))
         return m
 
     def assertNoResponse(self, query, timeout=0, **kwargs):
         m = self._feedMsg(query, timeout=timeout, **kwargs)
-        self.failIf(m, 'Unexpected response: %r' % m)
+        self.assertFalse(m, 'Unexpected response: %r' % m)
         return m
 
     def assertSnarfNoResponse(self, query, timeout=0, **kwargs):
@@ -284,7 +284,7 @@ class PluginTestCase(SupyTestCase):
     def assertResponse(self, query, expectedResponse, **kwargs):
         m = self._feedMsg(query, **kwargs)
         if m is None:
-            raise TimeoutError, query
+            raise TimeoutError(query)
         self.assertEqual(m.args[1], expectedResponse,
                          '%r != %r' % (expectedResponse, m.args[1]))
         return m
@@ -296,8 +296,8 @@ class PluginTestCase(SupyTestCase):
     def assertRegexp(self, query, regexp, flags=re.I, **kwargs):
         m = self._feedMsg(query, **kwargs)
         if m is None:
-            raise TimeoutError, query
-        self.failUnless(re.search(regexp, m.args[1], flags),
+            raise TimeoutError(query)
+        self.assertTrue(re.search(regexp, m.args[1], flags),
                         '%r does not match %r' % (m.args[1], regexp))
         return m
 
@@ -308,8 +308,8 @@ class PluginTestCase(SupyTestCase):
     def assertNotRegexp(self, query, regexp, flags=re.I, **kwargs):
         m = self._feedMsg(query, **kwargs)
         if m is None:
-            raise TimeoutError, query
-        self.failUnless(re.search(regexp, m.args[1], flags) is None,
+            raise TimeoutError(query)
+        self.assertTrue(re.search(regexp, m.args[1], flags) is None,
                         '%r matched %r' % (m.args[1], regexp))
         return m
 
@@ -320,8 +320,8 @@ class PluginTestCase(SupyTestCase):
     def assertAction(self, query, expectedResponse=None, **kwargs):
         m = self._feedMsg(query, **kwargs)
         if m is None:
-            raise TimeoutError, query
-        self.failUnless(ircmsgs.isAction(m), '%r is not an action.' % m)
+            raise TimeoutError(query)
+        self.assertTrue(ircmsgs.isAction(m), '%r is not an action.' % m)
         if expectedResponse is not None:
             s = ircmsgs.unAction(m)
             self.assertEqual(s, expectedResponse,
@@ -335,10 +335,10 @@ class PluginTestCase(SupyTestCase):
     def assertActionRegexp(self, query, regexp, flags=re.I, **kwargs):
         m = self._feedMsg(query, **kwargs)
         if m is None:
-            raise TimeoutError, query
-        self.failUnless(ircmsgs.isAction(m))
+            raise TimeoutError(query)
+        self.assertTrue(ircmsgs.isAction(m))
         s = ircmsgs.unAction(m)
-        self.failUnless(re.search(regexp, s, flags),
+        self.assertTrue(re.search(regexp, s, flags),
                         '%r does not match %r' % (s, regexp))
 
     def assertSnarfActionRegexp(self, query, regexp, flags=re.I, **kwargs):
@@ -355,13 +355,13 @@ class PluginTestCase(SupyTestCase):
             if ((name in self._noTestDoc) and \
                not name.lower() in self.__class__.__name__.lower()):
                 continue
-            self.failUnless(sys.modules[cb.__class__.__name__].__doc__,
+            self.assertTrue(sys.modules[cb.__class__.__name__].__doc__,
                             '%s has no module documentation.' % name)
             if hasattr(cb, 'isCommandMethod'):
                 for attr in dir(cb):
                     if cb.isCommandMethod(attr) and \
                        attr == callbacks.canonicalName(attr):
-                        self.failUnless(getattr(cb, attr, None).__doc__,
+                        self.assertTrue(getattr(cb, attr, None).__doc__,
                                         '%s.%s has no help.' % (name, attr))
 
 
@@ -373,10 +373,10 @@ class ChannelPluginTestCase(PluginTestCase):
         PluginTestCase.setUp(self)
         self.irc.feedMsg(ircmsgs.join(self.channel, prefix=self.prefix))
         m = self.irc.takeMsg()
-        self.failIf(m is None, 'No message back from joining channel.')
+        self.assertFalse(m is None, 'No message back from joining channel.')
         self.assertEqual(m.command, 'MODE')
         m = self.irc.takeMsg()
-        self.failIf(m is None, 'No message back from joining channel.')
+        self.assertFalse(m is None, 'No message back from joining channel.')
         self.assertEqual(m.command, 'WHO')
 
     def _feedMsg(self, query, timeout=None, to=None, frm=None, private=False,
@@ -391,13 +391,13 @@ class ChannelPluginTestCase(PluginTestCase):
         if timeout is None:
             timeout = self.timeout
         if self.myVerbose:
-            print # Newline, just like PluginTestCase.
+            print() # Newline, just like PluginTestCase.
         prefixChars = conf.supybot.reply.whenAddressedBy.chars()
         if query[0] not in prefixChars and usePrefixChar:
             query = prefixChars[0] + query
         msg = ircmsgs.privmsg(to, query, prefix=frm)
         if self.myVerbose:
-            print 'Feeding: %r' % msg
+            print('Feeding: %r' % msg)
         self.irc.feedMsg(msg)
         fed = time.time()
         response = self.irc.takeMsg()
@@ -422,7 +422,7 @@ class ChannelPluginTestCase(PluginTestCase):
         else:
             ret = None
         if self.myVerbose:
-            print 'Returning: %r' % ret
+            print('Returning: %r' % ret)
         return ret
 
     def feedMsg(self, query, to=None, frm=None, private=False):

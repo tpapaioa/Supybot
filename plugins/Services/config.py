@@ -56,8 +56,7 @@ def configure(advanced):
 class ValidNickOrEmptyString(registry.String):
     def setValue(self, v):
         if v and not ircutils.isNick(v):
-            raise registry.InvalidRegistryValue, \
-                  'Value must be a valid nick or the empty string.'
+            raise registry.InvalidRegistryValue('Value must be a valid nick or the empty string.')
         registry.String.setValue(self, v)
 
 class ValidNickSet(conf.ValidNicks):

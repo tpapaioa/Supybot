@@ -41,7 +41,7 @@ class WebTestCase(ChannelPluginTestCase):
             self.assertError('doctype ftp://ftp.cdrom.com/pub/linux')
             self.assertNotError('doctype http://www.slashdot.org/')
             m = self.getMsg('doctype http://moobot.sf.net/')
-            self.failUnless(m.args[1].endswith('>'))
+            self.assertTrue(m.args[1].endswith('>'))
 
         def testSize(self):
             self.assertError('size ftp://ftp.cdrom.com/pub/linux')
@@ -65,9 +65,9 @@ class WebTestCase(ChannelPluginTestCase):
             # part of it.
             self.assertRegexp('title http://www.n-e-r-d.com/', 'N.*E.*R.*D')
             # Checks that the parser doesn't hang on invalid tags
-            print
-            print "If we have not fixed a bug with the parser, the following",
-            print "test will hang the test-suite."
+            print()
+            print("If we have not fixed a bug with the parser, the following", end=' ')
+            print("test will hang the test-suite.")
             self.assertNotError(
                         'title http://www.youtube.com/watch?v=x4BtiqPN4u8')
 

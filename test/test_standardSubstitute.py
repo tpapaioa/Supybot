@@ -34,7 +34,7 @@ from supybot.utils.iter import all
 import supybot.ircutils as ircutils
 
 class holder:
-    users = set(map(str, range(1000)))
+    users = set(map(str, list(range(1000))))
 
 class FunctionsTestCase(SupyTestCase):
     class irc:
@@ -72,12 +72,12 @@ class FunctionsTestCase(SupyTestCase):
         self.assertNotEqual(f(self.irc, msg, '$today'), '$today')
         self.assertNotEqual(f(self.irc, msg, '$now'), '$now')
         n = f(self.irc, msg, '$randnick')
-        self.failUnless(n in self.irc.state.channels['#foo'].users)
+        self.assertTrue(n in self.irc.state.channels['#foo'].users)
         n = f(self.irc, msg, '$randomnick')
-        self.failUnless(n in self.irc.state.channels['#foo'].users)
+        self.assertTrue(n in self.irc.state.channels['#foo'].users)
         n = f(self.irc, msg, '$randomnick '*100)
         L = n.split()
-        self.failIf(all(L[0].__eq__, L), 'all $randomnicks were the same')
+        self.assertFalse(all(L[0].__eq__, L), 'all $randomnicks were the same')
         c = f(self.irc, msg, '$channel')
         self.assertEqual(c, msg.args[0])
 

@@ -103,7 +103,7 @@ class Factoids(callbacks.Plugin, plugins.ChannelDBHandler):
 
     def getCommandHelp(self, command, simpleSyntax=None):
         method = self.getCommandMethod(command)
-        if method.im_func.func_name == 'learn':
+        if method.__func__.__name__ == 'learn':
             chan = None
             if dynamic.msg is not None:
                 chan = dynamic.msg.args[0]
@@ -127,7 +127,7 @@ class Factoids(callbacks.Plugin, plugins.ChannelDBHandler):
             cursor.execute("INSERT INTO keys VALUES (NULL, ?, 0)", (key, ))
             db.commit()
             cursor.execute("SELECT id, locked FROM keys WHERE key LIKE ?", (key, ))
-        (id, locked) = map(int, cursor.fetchone())
+        (id, locked) = list(map(int, cursor.fetchone()))
         capability = ircdb.makeChannelCapability(channel, 'factoids')
         if not locked:
             if ircdb.users.hasUser(msg.prefix):
@@ -329,7 +329,7 @@ class Factoids(callbacks.Plugin, plugins.ChannelDBHandler):
         if cursor.rowcount == 0:
             irc.error('No factoid matches that key.')
             return
-        (id, locked) = map(int, cursor.fetchone())
+        (id, locked) = list(map(int, cursor.fetchone()))
         cursor.execute("""SELECT  added_by, added_at FROM factoids
                           WHERE key_id=?
                           ORDER BY id""", (id, ))

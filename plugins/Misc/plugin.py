@@ -173,7 +173,7 @@ class Misc(callbacks.Plugin):
                 for command in cb.listCommands():
                     if s in command:
                         commands.setdefault(command, []).append(cb.name())
-        for (key, names) in commands.iteritems():
+        for (key, names) in commands.items():
             for name in names:
                 L.append('%s %s' % (name, key))
         if L:
@@ -189,7 +189,7 @@ class Misc(callbacks.Plugin):
         This command gives a useful description of what <command> does.
         <plugin> is only necessary if the command is in more than one plugin.
         """
-        command = map(callbacks.canonicalName, command)
+        command = list(map(callbacks.canonicalName, command))
         (maxL, cbs) = irc.findCallbacksForArgs(command)
         if maxL == command:
             if len(cbs) > 1:
@@ -213,7 +213,7 @@ class Misc(callbacks.Plugin):
         try:
             newest = utils.web.getUrl('http://supybot.sf.net/version.txt')
             newest ='The newest version available online is %s.'%newest.strip()
-        except utils.web.Error, e:
+        except utils.web.Error as e:
             self.log.info('Couldn\'t get website version: %s', e)
             newest = 'I couldn\'t fetch the newest version ' \
                      'from the Supybot website.'
@@ -323,12 +323,12 @@ class Misc(callbacks.Plugin):
                 predicates.setdefault('regexp', []).append(f)
             elif option == 'nolimit':
                 nolimit = True
-        iterable = ifilter(self._validLastMsg, reversed(irc.state.history))
+        iterable = filter(self._validLastMsg, reversed(irc.state.history))
         if skipfirst:
             # Drop the first message only if our current channel is the same as
             # the channel we've been instructed to look at.
-            iterable.next()
-        predicates = list(utils.iter.flatten(predicates.itervalues()))
+            next(iterable)
+        predicates = list(utils.iter.flatten(iter(predicates.values())))
         # Make sure the user can't get messages from channels they aren't in
         def userInChannel(m):
             return m.args[0] in irc.state.channels \

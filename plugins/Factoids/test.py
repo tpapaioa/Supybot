@@ -146,7 +146,7 @@ if sqlite:
                 conf.supybot.plugins.Factoids. \
                     showFactoidIfOnlyOneMatch.setValue(False)
                 m2 = self.assertNotError('factoids search m/foo/')
-                self.failUnless(m1.args[1].startswith(m2.args[1]))
+                self.assertTrue(m1.args[1].startswith(m2.args[1]))
             finally:
                 conf.supybot.plugins.Factoids. \
                     showFactoidIfOnlyOneMatch.setValue(orig)

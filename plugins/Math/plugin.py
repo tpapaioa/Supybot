@@ -28,7 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 ###
 
-from __future__ import division
+
 
 import re
 import math
@@ -39,6 +39,7 @@ import string
 import supybot.utils as utils
 from supybot.commands import *
 import supybot.callbacks as callbacks
+import collections
 
 convertcore = utils.python.universalImport('local.convertcore')
 
@@ -86,7 +87,7 @@ class Math(callbacks.Plugin):
     def _convertBaseToBase(self, number, toBase, fromBase):
         """Convert a number from any base, 2 through 36, to any other
         base, 2 through 36. Returns a string."""
-        number = long(str(number), fromBase)
+        number = int(str(number), fromBase)
         if toBase == 10:
             return str(number)
         return self._convertDecimalToBase(number, toBase)
@@ -103,7 +104,7 @@ class Math(callbacks.Plugin):
     _mathEnv['abs'] = abs
     _mathEnv['max'] = max
     _mathEnv['min'] = min
-    _mathSafeEnv = dict([(x,y) for x,y in _mathEnv.items()
+    _mathSafeEnv = dict([(x,y) for x,y in list(_mathEnv.items())
         if x not in ['factorial']])
     _mathRe = re.compile(r'((?:(?<![A-Fa-f\d)])-)?'
                          r'(?:0x[A-Fa-f\d]+|'
@@ -207,9 +208,9 @@ class Math(callbacks.Plugin):
             irc.error('The answer exceeded %s or so.' % maxFloat)
         except TypeError:
             irc.error('Something in there wasn\'t a valid number.')
-        except NameError, e:
+        except NameError as e:
             irc.error('%s is not a defined function.' % str(e).split()[1])
-        except Exception, e:
+        except Exception as e:
             irc.error(str(e))
     calc = wrap(calc, ['text'])
 
@@ -240,9 +241,9 @@ class Math(callbacks.Plugin):
             irc.error('The answer exceeded %s or so.' % maxFloat)
         except TypeError:
             irc.error('Something in there wasn\'t a valid number.')
-        except NameError, e:
+        except NameError as e:
             irc.error('%s is not a defined function.' % str(e).split()[1])
-        except Exception, e:
+        except Exception as e:
             irc.error(utils.exnToString(e))
     icalc = wrap(icalc, [('checkCapability', 'trusted'), 'text'])
 
@@ -265,7 +266,7 @@ class Math(callbacks.Plugin):
             except ValueError: # Not a float.
                 if arg in self._mathEnv:
                     f = self._mathEnv[arg]
-                    if callable(f):
+                    if isinstance(f, collections.Callable):
                         called = False
                         arguments = []
                         while not called and stack:
@@ -294,7 +295,7 @@ class Math(callbacks.Plugin):
         if len(stack) == 1:
             irc.reply(str(self._complexToString(complex(stack[0]))))
         else:
-            s = ', '.join(map(self._complexToString, map(complex, stack)))
+            s = ', '.join(map(self._complexToString, list(map(complex, stack))))
             irc.reply('Stack: [%s]' % s)
 
     def convert(self, irc, msg, args, number, unit1, unit2):
@@ -307,7 +308,7 @@ class Math(callbacks.Plugin):
             newNum = convertcore.convert(number, unit1, unit2)
             newNum = self._floatToString(newNum)
             irc.reply(str(newNum))
-        except convertcore.UnitDataError, ude:
+        except convertcore.UnitDataError as ude:
             irc.error(str(ude))
     convert = wrap(convert, [optional('float', 1.0),'something','to','text'])
 

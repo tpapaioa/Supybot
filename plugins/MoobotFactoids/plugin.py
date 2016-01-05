@@ -33,7 +33,7 @@ import sqlite3
 import string
 import time
 
-from cStringIO import StringIO
+from io import StringIO
 
 import supybot.conf as conf
 import supybot.ircdb as ircdb
@@ -54,9 +54,9 @@ class OptionList(object):
                 return '(%s' % ''.join(ret) #)
             elif token == ')':
                 if '|' in ret:
-                    L = map(''.join,
+                    L = list(map(''.join,
                             utils.iter.split('|'.__eq__, ret,
-                                             yieldEmpty=True))
+                                             yieldEmpty=True)))
                     return utils.iter.choice(L)
                 else:
                     return '(%s)' % ''.join(ret)
@@ -93,7 +93,7 @@ class SqliteMoobotDB(object):
         self.dbs = ircutils.IrcDict()
 
     def close(self):
-        for db in self.dbs.itervalues():
+        for db in self.dbs.values():
             db.close()
         self.dbs.clear()
 
@@ -126,8 +126,7 @@ class SqliteMoobotDB(object):
     def getFactoid(self, channel, key):
         db = self._getDb(channel)
         cursor = db.cursor()
-        cursor.execute("SELECT fact FROM factoids
-                          WHERE key LIKE ?", (key, ))
+        cursor.execute("SELECT fact FROM factoids WHERE key LIKE ?", (key, ))
         if cursor.rowcount == 0:
             return None
         else:
@@ -136,12 +135,11 @@ class SqliteMoobotDB(object):
     def getFactinfo(self, channel, key):
         db = self._getDb(channel)
         cursor = db.cursor()
-        cursor.execute("SELECT created_by, created_at,
-                                 modified_by, modified_at,
-                                 last_requested_by, last_requested_at,
-                                 requested_count, locked_by, locked_at
+        cursor.execute("""SELECT created_by, created_at, modified_by,
+                          modified_at, last_requested_by, last_requested_at,
+                          requested_count, locked_by, locked_at
                           FROM factoids
-                          WHERE key LIKE ?", (key,))
+                          WHERE key LIKE ?""", (key,))
         if cursor.rowcount == 0:
             return None
         else:
@@ -150,8 +148,7 @@ class SqliteMoobotDB(object):
     def randomFactoid(self, channel):
         db = self._getDb(channel)
         cursor = db.cursor()
-        cursor.execute("SELECT fact, key FROM factoids
-                          ORDER BY random() LIMIT 1")
+        cursor.execute("SELECT fact, key FROM factoids ORDER BY random() LIMIT 1")
         if cursor.rowcount == 0:
             return None
         else:
@@ -160,44 +157,38 @@ class SqliteMoobotDB(object):
     def addFactoid(self, channel, key, value, creator_id):
         db = self._getDb(channel)
         cursor = db.cursor()
-        cursor.execute("INSERT INTO factoids VALUES
-                          (?, ?, ?, NULL, NULL, NULL, NULL,
-                           NULL, NULL, ?, 0)",
+        cursor.execute("INSERT INTO factoids VALUES (?, ?, ?, NULL, NULL, NULL, NULL, NULL, NULL, ?, 0)",
                            (key, creator_id, int(time.time()), value))
         db.commit()
 
     def updateFactoid(self, channel, key, newvalue, modifier_id):
         db = self._getDb(channel)
         cursor = db.cursor()
-        cursor.execute("UPDATE factoids
-                          SET fact=?, modified_by=?,
-                          modified_at=? WHERE key LIKE ?",
+        cursor.execute("UPDATE factoids SET fact=?, modified_by=?, modified_at=? WHERE key LIKE ?",
                           (newvalue, modifier_id, int(time.time()), key))
         db.commit()
 
     def updateRequest(self, channel, key, hostmask):
         db = self._getDb(channel)
         cursor = db.cursor()
-        cursor.execute("UPDATE factoids SET
+        cursor.execute("""UPDATE factoids SET
                           last_requested_by = ?,
                           last_requested_at = ?,
                           requested_count = requested_count + 1
-                          WHERE key = ?",
+                          WHERE key = ?""",
                           (hostmask, int(time.time()), key))
         db.commit()
 
     def removeFactoid(self, channel, key):
         db = self._getDb(channel)
         cursor = db.cursor()
-        cursor.execute("DELETE FROM factoids WHERE key LIKE ?",
-                          (key, ))
+        cursor.execute("DELETE FROM factoids WHERE key LIKE ?", (key, ))
         db.commit()
 
     def locked(self, channel, key):
         db = self._getDb(channel)
         cursor = db.cursor()
-        cursor.execute ("SELECT locked_by FROM factoids
-                           WHERE key LIKE ?", (key, ))
+        cursor.execute ("SELECT locked_by FROM factoids WHERE key LIKE ?", (key, ))
         if cursor.fetchone()[0] is None:
             return False
         else:
@@ -206,41 +197,36 @@ class SqliteMoobotDB(object):
     def lock(self, channel, key, locker_id):
         db = self._getDb(channel)
         cursor = db.cursor()
-        cursor.execute("UPDATE factoids
-                          SET locked_by=?, locked_at=?
-                          WHERE key LIKE ?",
+        cursor.execute("UPDATE factoids SET locked_by=?, locked_at=? WHERE key LIKE ?",
                           (locker_id, int(time.time()), key))
         db.commit()
 
     def unlock(self, channel, key):
         db = self._getDb(channel)
         cursor = db.cursor()
-        cursor.execute("UPDATE factoids
-                          SET locked_by=?, locked_at=?
-                          WHERE key LIKE ?", (None, None, key))
+        cursor.execute("UPDATE factoids SET locked_by=?, locked_at=? WHERE key LIKE ?", (None, None, key))
         db.commit()
 
     def mostAuthored(self, channel, limit):
         db = self._getDb(channel)
         cursor = db.cursor()
-        cursor.execute("SELECT created_by, count(key) FROM factoids
+        cursor.execute("""SELECT created_by, count(key) FROM factoids
                           GROUP BY created_by
-                          ORDER BY count(key) DESC LIMIT ?", (limit, ))
+                          ORDER BY count(key) DESC LIMIT ?""", (limit, ))
         return cursor.fetchall()
 
     def mostRecent(self, channel, limit):
         db = self._getDb(channel)
         cursor = db.cursor()
-        cursor.execute("SELECT key FROM factoids
-                          ORDER BY created_at DESC LIMIT ?", (limit, ))
+        cursor.execute("SELECT key FROM factoids ORDER BY created_at DESC LIMIT ?", (limit, ))
         return cursor.fetchall()
 
     def mostPopular(self, channel, limit):
         db = self._getDb(channel)
         cursor = db.cursor()
-        cursor.execute("SELECT key, requested_count FROM factoids
+        cursor.execute("""SELECT key, requested_count FROM factoids
                           WHERE requested_count > 0
-                          ORDER BY requested_count DESC LIMIT ?", (limit, ))
+                          ORDER BY requested_count DESC LIMIT ?""", (limit, ))
         if cursor.rowcount == 0:
             return []
         else:
@@ -249,8 +235,7 @@ class SqliteMoobotDB(object):
     def getKeysByAuthor(self, channel, authorId):
         db = self._getDb(channel)
         cursor = db.cursor()
-        cursor.execute("SELECT key FROM factoids WHERE created_by=?
-                          ORDER BY key", (authorId, ))
+        cursor.execute("SELECT key FROM factoids WHERE created_by=? ORDER BY key", (authorId, ))
         if cursor.rowcount == 0:
             return []
         else:
@@ -260,8 +245,7 @@ class SqliteMoobotDB(object):
         db = self._getDb(channel)
         cursor = db.cursor()
         glob = '%%%s%%' % glob
-        cursor.execute("SELECT key FROM factoids WHERE key LIKE ?
-                          ORDER BY key", (glob, ))
+        cursor.execute("SELECT key FROM factoids WHERE key LIKE ? ORDER BY key", (glob, ))
         if cursor.rowcount == 0:
             return []
         else:
@@ -271,8 +255,7 @@ class SqliteMoobotDB(object):
         db = self._getDb(channel)
         cursor = db.cursor()
         glob = '%%%s%%' % glob
-        cursor.execute("SELECT key FROM factoids WHERE fact LIKE ?
-                          ORDER BY key", (glob, ))
+        cursor.execute("SELECT key FROM factoids WHERE fact LIKE ? ORDER BY key", (glob, ))
         if cursor.rowcount == 0:
             return []
         else:
@@ -374,8 +357,8 @@ class MoobotFactoids(callbacks.Plugin):
             self.log.debug('Invalid tokens for {add,replace}Factoid: %s.',
                            tokens)
             s = 'Missing an \'is\' or \'_is_\'.'
-            raise ValueError, s
-        (key, newfact) = map(' '.join, utils.iter.split(p, tokens, maxsplit=1))
+            raise ValueError(s)
+        (key, newfact) = list(map(' '.join, utils.iter.split(p, tokens, maxsplit=1)))
         key = self._sanitizeKey(key)
         return (key, newfact)
 
@@ -385,7 +368,7 @@ class MoobotFactoids(callbacks.Plugin):
         id = self._getUserId(irc, msg.prefix)
         try:
             (key, fact) = self._getKeyAndFactoid(tokens)
-        except ValueError, e:
+        except ValueError as e:
             irc.error(str(e), Raise=True)
         # Check and make sure it's not in the DB already
         if self.db.getFactoid(channel, key):
@@ -395,8 +378,8 @@ class MoobotFactoids(callbacks.Plugin):
 
     def changeFactoid(self, irc, msg, tokens):
         id = self._getUserId(irc, msg.prefix)
-        (key, regexp) = map(' '.join,
-                            utils.iter.split('=~'.__eq__, tokens, maxsplit=1))
+        (key, regexp) = list(map(' '.join,
+                            utils.iter.split('=~'.__eq__, tokens, maxsplit=1)))
         channel = plugins.getChannel(msg.args[0])
         # Check and make sure it's in the DB
         fact = self._getFactoid(irc, channel, key)
@@ -404,7 +387,7 @@ class MoobotFactoids(callbacks.Plugin):
         # It's fair game if we get to here
         try:
             r = utils.str.perlReToReplacer(regexp)
-        except ValueError, e:
+        except ValueError as e:
             irc.errorInvalid('regexp', regexp, Raise=True)
         fact = fact[0]
         new_fact = r(fact)
@@ -434,7 +417,7 @@ class MoobotFactoids(callbacks.Plugin):
         del tokens[0] # remove the "no,"
         try:
             (key, fact) = self._getKeyAndFactoid(tokens)
-        except ValueError, e:
+        except ValueError as e:
             irc.error(str(e), Raise=True)
         _ = self._getFactoid(irc, channel, key)
         self._checkNotLocked(irc, channel, key)
