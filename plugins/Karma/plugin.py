@@ -254,9 +254,9 @@ class Karma(callbacks.Plugin):
         channel = msg.args[0]
         if not irc.isChannel(channel):
             return
-        if tokens[-1][-2:] in ('++', '--'):
-            thing = ' '.join(tokens)
-            self._doKarma(irc, channel, thing)
+        for thing in tokens.split():
+            if thing[-2:] in ('++', '--'):
+                self._doKarma(irc, channel, thing)
 
     def doPrivmsg(self, irc, msg):
         # We don't handle this if we've been addressed because invalidCommand
@@ -267,9 +267,10 @@ class Karma(callbacks.Plugin):
             if irc.isChannel(channel) and \
                self.registryValue('allowUnaddressedKarma', channel):
                 irc = callbacks.SimpleProxy(irc, msg)
-                thing = msg.args[1].rstrip()
-                if thing[-2:] in ('++', '--'):
-                    self._doKarma(irc, channel, thing)
+                things = msg.args[1].rstrip()
+                for thing in things.split():
+                    if thing[-2:] in ('++', '--'):
+                        self._doKarma(irc, channel, thing)
 
     def karma(self, irc, msg, args, channel, things):
         """[<channel>] [<thing> ...]
